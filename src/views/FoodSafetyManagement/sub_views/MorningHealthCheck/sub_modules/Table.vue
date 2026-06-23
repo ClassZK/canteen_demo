@@ -36,7 +36,9 @@
           align="center"
           show-overflow-tooltip
         ></ElTableColumn>
-        <ElTableColumn label="姓名" prop="name" min-width="150" align="center" show-overflow-tooltip></ElTableColumn>
+        <ElTableColumn label="姓名" prop="personnel_name" min-width="150" align="center" show-overflow-tooltip>
+          <template #default="scope">{{ scope.row.personnel_name || scope.row.name || scope.row.user_name }}</template>
+        </ElTableColumn>
         <ElTableColumn label="是否发热" prop="fever" min-width="150" align="center" show-overflow-tooltip>
           <template #default="scope">{{ onTableWhetherFilter(scope.row.fever) }}</template>
         </ElTableColumn>

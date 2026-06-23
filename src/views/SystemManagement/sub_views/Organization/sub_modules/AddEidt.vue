@@ -62,6 +62,16 @@
                 placeholder="请输入"
               ></ElInput> </ElFormItem
           ></ElCol> 
+          <ElCol :span="12">
+            <ElFormItem label="负责人" prop="contact_name">
+              <ElInput v-model="formModel.data.contact_name" maxlength="20" clearable placeholder="请输入负责人"></ElInput>
+            </ElFormItem>
+          </ElCol>
+          <ElCol :span="12">
+            <ElFormItem label="联系电话" prop="contact_phone">
+              <ElInput v-model="formModel.data.contact_phone" maxlength="11" clearable placeholder="请输入联系电话"></ElInput>
+            </ElFormItem>
+          </ElCol>
         </ElRow>
 
         <ElRow :gutter="30">
@@ -152,6 +162,8 @@ const formModel = reactive<Obj>({
     business_license_no: "",
     business_license_image: "",
     business_license_expire_date: "",
+    contact_name: "",
+    contact_phone: "",
     id: "",
   },
   rules: {
@@ -184,6 +196,8 @@ const formModel = reactive<Obj>({
       // },
     ],
     unit_attr: [{ required: true, message: "请选择组织类型", trigger: ["change", "blur"] }],
+    contact_name: [{ required: true, message: "请输入负责人", trigger: ["change", "blur"] }],
+    contact_phone: [{ required: true, message: "请输入联系电话", trigger: ["change", "blur"] }],
     business_license_no: [
       { required: OrganizationAuxStore.logType === 0, message: "请输入经营许可证编号", trigger: ["change", "blur"] },
     ],
@@ -207,6 +221,8 @@ const submitForm = async (formEl: FormInstance | undefined) => {
     if (valid) {
       const params = _.deepClone(formModel.data);
       params.city_id = formModel.data.city_id[formModel.data.city_id.length - 1];
+      params.org_name = params.name;
+      params.unit_attr_name = ORG_UNIT_ATTR.find(item => item.value === params.unit_attr)?.label || "";
       params.independent = Number(formModel.data.independent);
       if (params.unit_attr !== "8") {
         params.business_license_no = "";
@@ -253,6 +269,11 @@ const handleChange = (val: Obj) => {
 onMounted(() => {
   if (OrganizationAuxStore.logType === 0) {
     formModel.data.parent_id = OrganizationAuxStore.pid;
+    const parent = OrganizationAuxStore.checked || {};
+    const nextUnitAttr = parent.unit_attr === "2" ? "4" : parent.unit_attr === "4" ? "8" : "2";
+    formModel.data.unit_attr = nextUnitAttr;
+    formModel.data.contact_name = "组织负责人";
+    formModel.data.contact_phone = "13800000000";
   } else {
     formModel.data = OrganizationAuxStore.current;
     formModel.data.city_id = [formModel.data.city_id];

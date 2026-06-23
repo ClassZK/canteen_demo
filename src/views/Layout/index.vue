@@ -22,10 +22,14 @@ const getApiSystemUserinfo = async () => {
   const { success, data } = await apiSystemUserinfo();
   if (success) {
     Storage.set("SystemUserinfo", data);
-    if (data?.user_scope === "platform") {
-      Storage.set("orgID", "");
-    } else if (!Storage.get("orgID")) {
-      Storage.set("orgID", data?.org_id || data?.orgs?.[0]?.org_id || "");
+    Storage.set("Orgs", data?.orgs || []);
+    if (!Storage.get("roleID")) {
+      Storage.set("roleID", data?.role_id || data?.roles?.[0]?.role_id || "");
+    }
+    const orgs = data?.orgs || [];
+    const orgID = Storage.get("orgID");
+    if (!orgID || (orgs.length > 0 && !orgs.some((item: Obj) => item.org_id === orgID))) {
+      Storage.set("orgID", data?.org_id || orgs?.[0]?.org_id || "");
     }
 
     UserStore.$patch(state => {

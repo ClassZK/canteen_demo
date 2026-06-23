@@ -19,7 +19,7 @@
             <div class="query-right">
                 <ElButton type="primary" @click="onTableSearch">查询</ElButton>
                 <ElButton class="gray" @click="onTableReset">重置</ElButton>
-                <!-- <ElButton type="primary" @click="onTableAdd">新增</ElButton> -->
+                <ElButton type="primary" @click="onTableAdd">新增</ElButton>
             </div>
         </div>
         <div class="table-container">
@@ -40,9 +40,7 @@
                 <ElTableColumn fixed="right" label="操作" width="120" align="center">
                     <template #default="scope">
                         <div class="handle">
-                            <template v-if="scope.row.status === HandleStatusEnum.Pending">
-                                <ElButton type="success" link @click="onTableHandle(scope.row)">处理</ElButton>
-                            </template>
+                            <ElButton type="success" link @click="onTableHandle(scope.row)">处理</ElButton>
                             <ElButton type="primary" link @click="onTableDetail(scope.row)">详情</ElButton>
                         </div>
                     </template>

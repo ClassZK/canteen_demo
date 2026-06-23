@@ -76,25 +76,16 @@ const menuModel = reactive({
   version: "",
 });
 
+const managerRoleCodes = ["platform_admin", "project_manager", "canteen_manager"];
+const getActiveRoleCode = (user: Obj) => {
+  const roleId = Storage.get("roleID") || user?.role_id;
+  const role = Array.isArray(user?.roles) ? user.roles.find((item: Obj) => item.role_id === roleId || item.id === roleId) : null;
+  return role?.role_code || role?.code || user?.role_code;
+};
+
 const menuRoutesFilter = (routes: Obj[]): Obj[] => {
   return routes.reduce<Obj[]>((result, route) => {
-    const SystemUserinfo: Obj = Storage.get("SystemUserinfo") ?? {};
-    const rules = _.getArray((SystemUserinfo?.rule ?? "").split(","));
     if (route.meta?.hiddenMenu) return result;
-    if (route.meta?.platformOnly && SystemUserinfo?.user_scope !== "platform") return result;
-    if (route.meta?.canteenManagerOnly && !(SystemUserinfo?.user_scope === "canteen" && SystemUserinfo?.rule === "*")) return result;
-    if (SystemUserinfo?.rule === "*") {
-      result.push({
-        ...route,
-        children: route.children ? menuRoutesFilter(route.children) : undefined,
-      });
-      return result;
-    }
-    if (route.meta?.rolesAny) {
-      if (!_utils.permissionAnyFilter(route.meta.rolesAny)) return result;
-    } else if (route.meta?.role) {
-      if (!rules.includes(route.meta.role)) return result;
-    }
     result.push({
       ...route,
       children: route.children ? menuRoutesFilter(route.children) : undefined,
@@ -113,13 +104,14 @@ const businessManagementNames = [
   "supervisionManagement",
 ];
 const showPlatformOrgFilter = computed(() => {
-  return systemUserinfo.value?.user_scope === "platform" && Route.matched.some(item => businessManagementNames.includes(String(item.name || "")));
+  return false;
 });
 
 const readonlyActionTexts = ["新增", "新增下级", "编辑", "删除", "导入", "提交", "保存", "确 定", "确定"];
 const readonlyKeepTexts = ["查询", "重置", "查看", "查看全部", "详情", "取消", "关闭"];
 
 const applyPlatformReadonlyActions = async () => {
+  return;
   await nextTick();
   const root = document.querySelector(".layout-container");
   if (!root) return;

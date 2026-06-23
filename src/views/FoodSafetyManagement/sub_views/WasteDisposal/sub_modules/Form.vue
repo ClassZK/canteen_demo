@@ -17,8 +17,8 @@
         ref="formRef"
         :model="formModel.data"
         :rules="formModel.rules"
-        disabled
-        hide-required-asterisk
+        :disabled="formModel.disabled"
+        :hide-required-asterisk="formModel.disabled"
         scroll-to-error
         label-width="80px"
         label-position="top"
@@ -33,49 +33,36 @@
                 :default-time="dateTimeModel.defaultTime"
                 :disabled-date="onDateTimeDisabled"
                 placeholder="请选择处理时间"
-              >
-              </ElDatePicker>
+              ></ElDatePicker>
             </ElFormItem>
           </ElCol>
           <ElCol :span="12">
             <ElFormItem label="废弃物量(斤)" prop="waste_volume">
-              <ElInput
-                v-model="formModel.data.waste_volume"
-                maxlength="10"
-                show-word-limit
-                clearable
-                placeholder="请输入废弃物量"
-              ></ElInput>
+              <ElInput v-model="formModel.data.waste_volume" maxlength="10" show-word-limit clearable placeholder="请输入废弃物量"></ElInput>
             </ElFormItem>
           </ElCol>
           <ElCol :span="12">
             <ElFormItem label="废弃物种类" prop="waste_type">
-                <ElSelect v-model="formModel.data.waste_type" filterable clearable placeholder="请输入废弃物种类">
-                    <ElOption v-for="item of GarbageTypeList" :key="item.value" :label="item.name" :value="item.value"></ElOption>
-                </ElSelect>
+              <ElSelect v-model="formModel.data.waste_type" filterable clearable placeholder="请选择废弃物种类">
+                <ElOption v-for="item of GarbageTypeList" :key="item.value" :label="item.name" :value="item.value"></ElOption>
+              </ElSelect>
             </ElFormItem>
           </ElCol>
           <ElCol :span="12">
             <ElFormItem label="收运公司" prop="recipient">
-              <ElInput
-                v-model.trim="formModel.data.recipient"
-                maxlength="30"
-                show-word-limit
-                clearable
-                placeholder="请输入收运公司"
-              ></ElInput>
+              <ElInput v-model.trim="formModel.data.recipient" maxlength="30" show-word-limit clearable placeholder="请输入收运公司"></ElInput>
             </ElFormItem>
           </ElCol>
           <ElCol :span="12">
             <ElFormItem label="收运商资质是否合格" prop="recipient_qualifications">
               <ElRadioGroup v-model="formModel.data.recipient_qualifications">
-                <ElRadioButton v-for="item of WhetherList" :label="item.name" :value="item.value" />
+                <ElRadioButton v-for="item of WhetherList" :key="item.value" :label="item.name" :value="item.value" />
               </ElRadioGroup>
             </ElFormItem>
           </ElCol>
           <ElCol>
             <ElFormItem label="图片" prop="image">
-              <IUploadImage :disabled="true" :data="formModel.data.image"></IUploadImage>
+              <IUploadImage :disabled="formModel.disabled" :data="formModel.data.image"></IUploadImage>
             </ElFormItem>
           </ElCol>
         </ElRow>
@@ -83,7 +70,8 @@
     </div>
     <template #footer>
       <div class="dialog-footer">
-        <ElButton @click="formModel.visible = false">关闭</ElButton>
+        <ElButton @click="formModel.visible = false">{{ formModel.disabled ? "关闭" : "取消" }}</ElButton>
+        <ElButton v-if="!formModel.disabled" type="primary" :loading="formModel.loading" @click="onFormConfirm">确定</ElButton>
       </div>
     </template>
   </ElDialog>
@@ -92,51 +80,74 @@
 <script lang="ts" setup>
 import { ref, reactive, watch } from "vue";
 import { useWasteDisposalAuxStore } from "../aux_modules/store";
-import { OperationTypeEnum, OperationTypeName, WhetherEnum, WhetherList, GarbageTypeList } from "@/global/const";
-import { dateTimeFilter, timestampFilter } from '@/utils/Dayjs/index';
+import { OperationTypeEnum, OperationTypeName, WhetherEnum, WhetherList, GarbageTypeList, Message } from "@/global/const";
+import { dateTimeFilter, timestampFilter } from "@/utils/Dayjs/index";
+import { apiWasteDisposalUpdate } from "@/api/inspection";
 
 const WasteDisposalAuxStore = useWasteDisposalAuxStore();
 const formRef = ref();
 
-/** 输入数据 函数方式 */
 const formInitial = () => ({
-  disposal_time: '',
-  waste_volume: '',
-  waste_type: '',
-  recipient: '',
+  disposal_time: "",
+  waste_volume: "",
+  waste_type: "",
+  recipient: "",
   recipient_qualifications: WhetherEnum.yes,
   image: "",
 });
-/** 交互反馈数据 */
+
 const formModel = reactive({
   visible: false,
   loading: false,
   vLoading: false,
+  disabled: false,
   OperationTypeName: "",
   data: formInitial() as Obj,
   checked: {} as Obj,
   rules: {
     disposal_time: [{ required: true, message: "请选择处理时间", trigger: ["change", "blur"] }],
     waste_volume: [{ required: true, message: "请输入废弃物量", trigger: ["change", "blur"] }],
-    waste_type: [{ required: true, message: "请输入废弃物种类", trigger: ["change", "blur"] }],
+    waste_type: [{ required: true, message: "请选择废弃物种类", trigger: ["change", "blur"] }],
     recipient: [{ required: true, message: "请输入收运公司", trigger: ["change", "blur"] }],
     recipient_qualifications: [{ required: true, message: "请选择收运商资质是否合格", trigger: ["change", "blur"] }],
   },
 });
-/** 时间 */
+
 const dateTimeModel = reactive({
   valueFormat: "YYYY-MM-DD HH:mm:ss",
   defaultTime: new Date(2000, 1, 1, 0, 0, 0),
 });
 const onDateTimeDisabled = (time: Date) => {
-    const dateTime = dateTimeFilter(new Date());
-    const timestamp = timestampFilter(dateTime);
-    return time.getTime() > timestamp;
+  const dateTime = dateTimeFilter(new Date());
+  const timestamp = timestampFilter(dateTime);
+  return time.getTime() > timestamp;
 };
 
-/** 取消 */
+const onFormConfirm = async () => {
+  formRef.value?.validate(async (valid: boolean) => {
+    if (!valid) return;
+    formModel.loading = true;
+    const { success, message } = await apiWasteDisposalUpdate({
+      ...formModel.data,
+      id: formModel.checked.id || "",
+    });
+    if (success) {
+      formModel.visible = false;
+      WasteDisposalAuxStore.$patch(state => {
+        state.refresh += 1;
+      });
+      Message.success(`废弃物处置报表${formModel.OperationTypeName}成功`);
+    } else {
+      Message.warning(message);
+    }
+    formModel.loading = false;
+  });
+};
+
 const onFormClosed = () => {
   formModel.data = formInitial();
+  formModel.checked = {};
+  formModel.disabled = false;
   formRef.value?.resetFields();
   WasteDisposalAuxStore.$patch(state => {
     state.data = {};
@@ -144,17 +155,23 @@ const onFormClosed = () => {
   });
 };
 
-/** 监听操作类型 */
 watch(
   () => WasteDisposalAuxStore.OperationType,
   type => {
-    const array = [OperationTypeEnum.detail];
+    const array = [OperationTypeEnum.add, OperationTypeEnum.update, OperationTypeEnum.detail];
     if (array.includes(type as OperationTypeEnum)) {
       formModel.OperationTypeName = OperationTypeName[type as OperationTypeEnum];
-      formModel.data = JSON.parse(JSON.stringify(WasteDisposalAuxStore.data));
+      formModel.disabled = type === OperationTypeEnum.detail;
+      if (type === OperationTypeEnum.add) {
+        formModel.checked = {};
+        formModel.data = formInitial();
+      } else {
+        formModel.checked = JSON.parse(JSON.stringify(WasteDisposalAuxStore.data));
+        formModel.data = JSON.parse(JSON.stringify(WasteDisposalAuxStore.data));
+      }
       formModel.visible = true;
     }
-  }
+  },
 );
 </script>
 

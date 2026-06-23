@@ -117,7 +117,7 @@ interface LoginForm {
 
 const loginForm = reactive<LoginForm>({
   username: "admin",
-  password: "Admin123",
+  password: "Admin123456",
   phone: "13800000000",
   smsCode: "123456",
   rules: {
@@ -219,8 +219,9 @@ const handleSmsLogin = async () => {
 const saveLoginInfo = (data: Obj) => {
   Storage.set("token", data.token);
   Storage.set("SystemUserinfo", data);
-  Storage.set("Orgs", data?.orgs);
-  const orgID = data?.user_scope === "platform" ? "" : data?.orgs[0]?.org_id || data?.org_id || "";
+  Storage.set("Orgs", data?.orgs || []);
+  Storage.set("roleID", data?.role_id || data?.roles?.[0]?.role_id || "");
+  const orgID = data?.orgs?.[0]?.org_id || data?.org_id || "";
   Storage.set("orgID", orgID);
   const route = Router.resolve({
     name: "home",

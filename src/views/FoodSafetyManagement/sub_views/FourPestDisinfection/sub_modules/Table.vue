@@ -28,8 +28,14 @@
       <ElTable height="100%" scrollbar-always-on :data="tableModel.data">
         
         <IPlatformOrgColumn></IPlatformOrgColumn><ElTableColumn label="消杀日期" prop="disinfection_date" min-width="130" align="center" show-overflow-tooltip />
-        <ElTableColumn label="消杀公司" prop="disinfection_company" min-width="180" align="center" show-overflow-tooltip />
-        <ElTableColumn label="操作人员" prop="operator" min-width="120" align="center" show-overflow-tooltip />
+        <ElTableColumn label="消杀区域" prop="disinfection_area" min-width="150" align="center" show-overflow-tooltip>
+          <template #default="scope">
+            {{ optionText(scope.row.disinfection_area, CanteenAreaList) }}
+          </template>
+        </ElTableColumn>
+        <ElTableColumn label="操作人员" prop="operator" min-width="120" align="center" show-overflow-tooltip>
+          <template #default="scope">{{ scope.row.operator || scope.row.user_name || scope.row.recorder }}</template>
+        </ElTableColumn>
         <ElTableColumn label="消杀内容" prop="disinfection_content" min-width="180" align="center" show-overflow-tooltip>
           <template #default="scope">
             {{ optionText(scope.row.disinfection_content, FourPestContentList) }}
@@ -68,7 +74,7 @@
 <script lang="ts" setup>
 import { ref, reactive, watch } from "vue";
 import { useFourPestDisinfectionAuxStore } from "../aux_modules/store";
-import { OperationTypeEnum, Message, FourPestContentList, CheckResultList } from "@/global/const";
+import { OperationTypeEnum, Message, FourPestContentList, CheckResultList, CanteenAreaList } from "@/global/const";
 import _utils from "@/utils/index";
 import { apiFourPestDisinfectionList, apiFourPestDisinfectionDelete } from "@/api/inspection";
 import { ElMessageBox } from "element-plus";

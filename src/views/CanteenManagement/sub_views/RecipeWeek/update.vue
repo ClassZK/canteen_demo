@@ -40,8 +40,10 @@
               type="warning"
               closable
               @close="onCanteenDishesClose(el, i)"
-              >{{ e.name }}</ElTag
             >
+              <span>{{ e.name }}</span>
+              <span v-if="e.price !== undefined && e.price !== null && e.price !== ''" class="dish-price-text">￥{{ Number(e.price || 0).toFixed(2) }}</span>
+            </ElTag>
             <ElButton plain circle size="small" @click="onCanteenDishesChoose(item, el.value)">
               <ElIcon><Plus /></ElIcon>
             </ElButton>
@@ -155,6 +157,7 @@ const onConfirm = async () => {
         list.push({
           meal_types: item.value,
           dish_id: el.id,
+          price: el.price || 0,
         });
       }
     }
@@ -211,5 +214,10 @@ watch(
       margin-left: var(--gap);
     }
   }
+}
+
+.dish-price-text {
+  margin-left: 6px;
+  font-weight: 600;
 }
 </style>

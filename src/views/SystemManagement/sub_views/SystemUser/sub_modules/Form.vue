@@ -5,29 +5,21 @@
         <div class="form-container" v-loading="formModel.vLoading" element-loading-text="数据加载中">
             <ElForm ref="formRef" :model="formModel.data" :rules="formRules" :disabled="formModel.disabled" :hide-required-asterisk="formModel.disabled" scroll-to-error label-width="80px" label-position="top">
                 <ElRow :gutter="30">
-                    <ElCol v-if="isSystemGroup" :span="12">
-                        <ElFormItem label="账号类型" prop="user_type">
-                            <ElSelect v-model="formModel.data.user_type" :disabled="formModel.itemDisabled" placeholder="账号类型">
-                                <ElOption label="食堂负责人" :value="1"></ElOption>
-                                <ElOption label="平台管理员" :value="20"></ElOption>
+                    <ElCol v-if="showOrgField" :span="12">
+                        <ElFormItem label="组织" prop="org_ids">
+                            <ElSelect v-model="formModel.data.org_ids" multiple filterable clearable placeholder="请选择组织" @change="onOrgIdsChange">
+                                <ElOption v-for="item of orgOptions" :key="item.org_id" :label="item.org_name" :value="item.org_id"></ElOption>
                             </ElSelect>
                         </ElFormItem>
                     </ElCol>
-                    <ElCol v-if="showOrgField" :span="12">
-                        <ElFormItem label="学校" prop="org_id">
-                            <ICascaderDepartment
-                                v-model="formModel.data.org_id"
-                                filterable
-                                clearable
-                                noCache
-                                placeholder="请选择学校"
-                                @change="onDepartmentChange"
-                            ></ICascaderDepartment>
+                    <ElCol v-if="showOrgSummary" :span="12">
+                        <ElFormItem label="绑定组织">
+                            <ElInput v-model="currentOrgName" disabled placeholder="当前组织"></ElInput>
                         </ElFormItem>
                     </ElCol>
                     <ElCol :span="12">
-                        <ElFormItem label="账号" :prop="formModel.itemDisabled? '':'account'">
-                            <ElInput v-model="formModel.data.account" maxlength="20" show-word-limit clearable :disabled="formModel.itemDisabled" placeholder="请输入账号"></ElInput>
+                        <ElFormItem label="账号" prop="account">
+                            <ElInput v-model="formModel.data.account" maxlength="20" show-word-limit clearable placeholder="请输入账号"></ElInput>
                         </ElFormItem>
                     </ElCol>
                     <ElCol :span="12">
@@ -47,9 +39,9 @@
                             <ElInput v-model="formModel.data.phone" maxlength="11" show-word-limit clearable placeholder="请输入联系电话"></ElInput>
                         </ElFormItem>
                     </ElCol>
-                    <ElCol v-if="isCanteenGroup" :span="12">
+                    <ElCol :span="12">
                         <ElFormItem label="角色" prop="role_ids">
-                            <ElSelect v-model="formModel.data.role_ids" multiple filterable clearable placeholder="角色">
+                            <ElSelect v-model="formModel.data.role_ids" multiple filterable :disabled="!allowMultipleRoles" :clearable="allowMultipleRoles" placeholder="角色">
                                 <ElOption v-for="item of commonModel.roleList" :key="item.role_id" :label="item.role_name"
                                     :value="item.role_id"></ElOption>
                             </ElSelect>
@@ -71,6 +63,7 @@
 import { ref, reactive, watch } from 'vue';
 import { computed } from 'vue';
 import Encrypt from 'tddev/encrypt';
+import Storage from 'tddev/storage';
 import { useUserAuxStore } from '../aux_modules/store';
 import { OperationTypeEnum, OperationTypeName, Message } from '@/global/const';
 import { validatorE_N, validatorC_E_N, validatorPhone, validatorPassword } from '@/utils/Regexp/index';
@@ -78,9 +71,29 @@ import { apiSystemUserAdd, apiSystemUserUpdate, apiSystemUserDetail, apiRoleDict
 
 const UserAuxStore = useUserAuxStore();
 const formRef = ref();
-const isCanteenGroup = computed(() => UserAuxStore.roleGroup === 'canteen');
-const isSystemGroup = computed(() => UserAuxStore.roleGroup === 'sys');
-const showOrgField = computed(() => isCanteenGroup.value || Number(formModel.data.user_type) !== 20);
+const systemUserinfo: Obj = Storage.get('SystemUserinfo') ?? {};
+const activeRoleCode = computed(() => {
+    const roleId = Storage.get('roleID') || systemUserinfo?.role_id;
+    const role = Array.isArray(systemUserinfo?.roles) ? systemUserinfo.roles.find((item: Obj) => item.role_id === roleId) : null;
+    return role?.role_code || role?.code || systemUserinfo?.role_code;
+});
+const isPlatformAdmin = computed(() => activeRoleCode.value === 'platform_admin');
+const isCanteenManager = computed(() => activeRoleCode.value === 'canteen_manager');
+const allowMultipleRoles = computed(() => isCanteenManager.value);
+const showOrgField = computed(() => isPlatformAdmin.value);
+const showOrgSummary = computed(() => !isPlatformAdmin.value);
+const currentOrgName = computed(() => {
+    const orgs: Obj[] = Storage.get('Orgs') ?? [];
+    const orgID = Storage.get('orgID') || systemUserinfo?.org_id;
+    return orgs.find(item => item.org_id === orgID)?.org_name || systemUserinfo?.org_name || '';
+});
+const orgOptions = computed<Obj[]>(() => {
+    const orgs: Obj[] = Storage.get('Orgs') ?? [];
+    if (isPlatformAdmin.value) {
+        return orgs.filter(item => item.org_id && item.org_type === 'project');
+    }
+    return orgs.filter(item => item.org_id && item.org_type !== 'company');
+});
 
 const formRules = computed(() => {
     const rules: Obj = {
@@ -98,15 +111,13 @@ const formRules = computed(() => {
         ]
     };
     if (showOrgField.value) {
-        rules.org_id = [
-            { required: true, message: '请选择学校', trigger: ['change', 'blur'] }
+        rules.org_ids = [
+            { required: true, message: '请选择组织', trigger: ['change', 'blur'] }
         ];
     }
-    if (isCanteenGroup.value) {
-        rules.role_ids = [
-            { required: true, message: '请选择角色', trigger: ['change', 'blur'] }
-        ];
-    }
+    rules.role_ids = [
+        { required: true, message: '请选择角色', trigger: ['change', 'blur'] }
+    ];
     return rules;
 });
 
@@ -122,6 +133,7 @@ const formInitial = () => ({
     phone: '',
     role_id: '',
     role_ids: [] as string[],
+    org_ids: [] as string[],
     department_ids: [],
     org_id: '',
     role_group: UserAuxStore.roleGroup || 'canteen',
@@ -154,7 +166,7 @@ const formModel = reactive({
             { required: true, message: '请选择角色', trigger: ['change', 'blur'] }
         ],
         org_id: [
-            { required: true, message: '请选择学校', trigger: ['change', 'blur'] }
+            { required: true, message: '请选择组织', trigger: ['change', 'blur'] }
         ]
     }
 });
@@ -183,13 +195,7 @@ const onFormConfirm = async () => {
 };
 /** 新增 */
 const onFormAdd = async () => {
-    if (!isCanteenGroup.value) {
-        formModel.data.role_ids = [];
-        formModel.data.role_id = '';
-        if (Number(formModel.data.user_type) === 20) {
-            formModel.data.org_id = '';
-        }
-    }
+    normalizeSubmitData();
     const object = {...formModel.data, ...{
         password: Encrypt.md5(formModel.data.password),
         role_group: UserAuxStore.roleGroup
@@ -206,13 +212,7 @@ const onFormAdd = async () => {
 }
 /** 编辑 */
 const onFormUpdate = async () => {
-    if (!isCanteenGroup.value) {
-        formModel.data.role_ids = [];
-        formModel.data.role_id = '';
-        if (Number(formModel.data.user_type) === 20) {
-            formModel.data.org_id = '';
-        }
-    }
+    normalizeSubmitData();
     const { success, message } = await apiSystemUserUpdate({
         ...formModel.data,
         role_group: UserAuxStore.roleGroup
@@ -246,12 +246,9 @@ const onFormClosed = () => {
     });
 };
 
-const onDepartmentChange = (value: string | number) => {
-    formModel.data.org_id = value;
-    formModel.data.role_ids = [];
-    if (isCanteenGroup.value) {
-        getApiRoleList(String(value || ''));
-    }
+const onOrgIdsChange = (value: string[]) => {
+    formModel.data.org_ids = Array.isArray(value) ? value : [];
+    formModel.data.org_id = formModel.data.org_ids[0] || '';
 };
 
 const getApiRoleList = async (orgId: string) => {
@@ -263,10 +260,28 @@ const getApiRoleList = async (orgId: string) => {
     });
     if (success) {
         commonModel.roleList = data.list;
+        if (formModel.data.role_ids.length === 0 && data.list.length > 0) {
+            formModel.data.role_ids = allowMultipleRoles.value ? [] : [data.list[0].role_id];
+        }
         UserAuxStore.$patch((state) => {
             state.roleList = commonModel.roleList;
         });
     }
+};
+
+const normalizeSubmitData = () => {
+    if (!Array.isArray(formModel.data.role_ids)) {
+        formModel.data.role_ids = formModel.data.role_ids ? [formModel.data.role_ids] : [];
+    }
+    if (!allowMultipleRoles.value && formModel.data.role_ids.length > 1) {
+        formModel.data.role_ids = formModel.data.role_ids.slice(0, 1);
+    }
+    const orgIds = isPlatformAdmin.value
+        ? formModel.data.org_ids
+        : [Storage.get('orgID') || systemUserinfo?.org_id || ''].filter(Boolean);
+    formModel.data.org_ids = orgIds;
+    formModel.data.org_id = orgIds[0] || '';
+    formModel.data.role_id = formModel.data.role_ids[0] || '';
 };
 
 watch(() => UserAuxStore.roleList, (array) => {
@@ -277,16 +292,19 @@ watch(() => UserAuxStore.roleList, (array) => {
 /** 监听操作类型 */
 watch(() => UserAuxStore.OperationType, async (type) => {
     formModel.disabled = UserAuxStore.OperationType === OperationTypeEnum.detail;
-    formModel.itemDisabled = UserAuxStore.OperationType === OperationTypeEnum.update;
+    formModel.itemDisabled = false;
     const array = [OperationTypeEnum.add, OperationTypeEnum.update, OperationTypeEnum.detail];
     if (array.includes(type)) {
         formModel.visible = true;
-        formModel.title = isCanteenGroup.value ? '人员' : '管理员';
+        formModel.title = '人员';
         formModel.OperationTypeName = OperationTypeName[type];
         formModel.data.role_group = UserAuxStore.roleGroup || 'canteen';
-        formModel.data.user_type = isSystemGroup.value ? 1 : 1;
         if (type === OperationTypeEnum.add) {
-            formModel.data.org_id = UserAuxStore.org_id;
+            formModel.data.org_ids = isPlatformAdmin.value
+                ? (UserAuxStore.org_id ? [UserAuxStore.org_id] : [])
+                : [Storage.get('orgID') || systemUserinfo?.org_id || ''].filter(Boolean);
+            formModel.data.org_id = formModel.data.org_ids[0] || '';
+            await getApiRoleList(String(formModel.data.org_id || ''));
         }
 
         if (type === OperationTypeEnum.update) {
@@ -302,6 +320,10 @@ watch(() => UserAuxStore.OperationType, async (type) => {
             formModel.data.role_ids = Array.isArray(formModel.data.role_ids)
                 ? formModel.data.role_ids
                 : String(formModel.data.role_id || '').split(',').filter(Boolean);
+            formModel.data.org_ids = Array.isArray(formModel.data.org_ids)
+                ? formModel.data.org_ids
+                : String(formModel.data.org_id || '').split(',').filter(Boolean);
+            await getApiRoleList(String(formModel.data.org_id || ''));
         }
     }
 });

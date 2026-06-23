@@ -6,6 +6,13 @@
           <ElButton icon="back" @click="onBack">返回</ElButton>
         </div>
         <div class="handle">
+          <ElButton
+            type="primary"
+            :disabled="pageModel.selection.length === 0"
+            @click="onBatchSignOpen"
+          >
+            批量签收
+          </ElButton>
           <ElButton :loading="pageModel.saveLoading" @click="onSaveDraft">保存当前签收信息</ElButton>
           <ElButton type="primary" :loading="pageModel.submitLoading" @click="onSubmitOrder">整单提交</ElButton>
         </div>
@@ -28,13 +35,16 @@
           <div class="detail-item-value">{{ pageModel.data.order_sn }}</div>
         </div>
       </div>
-      <div class="upload-content">
-        <div class="upload-label">统一入库图片：</div>
-        <IUploadImage :limit="5" :data="pageModel.commonImage" @success="onCommonImageUpload"></IUploadImage>
-      </div>
     </div>
     <div class="table-container">
-      <ElTable height="100%" scrollbar-always-on :data="pageModel.data.list">
+      <ElTable
+        ref="tableRef"
+        height="100%"
+        scrollbar-always-on
+        :data="pageModel.data.list"
+        @selection-change="onSelectionChange"
+      >
+        <ElTableColumn type="selection" width="55" align="center" :selectable="isRowSelectable" />
         <ElTableColumn label="商品名称" prop="goods_name" align="center" min-width="160" show-overflow-tooltip />
         <ElTableColumn label="商品分类名称" prop="cat_name" min-width="150" align="center" show-overflow-tooltip />
         <ElTableColumn label="下单数量" prop="goods_number" min-width="130" align="center" show-overflow-tooltip />
@@ -47,6 +57,7 @@
               :step="getStep(scope.row)"
               :max="9999999"
               :min="0"
+              :disabled="isSigned(scope.row)"
             ></ElInputNumber>
           </template>
         </ElTableColumn>
@@ -58,10 +69,16 @@
               :step="getStep(scope.row)"
               :max="9999999"
               :min="0"
+              :disabled="isSigned(scope.row)"
             ></ElInputNumber>
           </template>
         </ElTableColumn>
         <ElTableColumn label="商品单位" prop="unit" min-width="120" align="center" show-overflow-tooltip />
+        <ElTableColumn label="签收状态" prop="sign_status" min-width="120" align="center">
+          <template #default="scope">
+            <ElTag :type="isSigned(scope.row) ? 'success' : 'warning'">{{ isSigned(scope.row) ? "已签收" : "待签收" }}</ElTag>
+          </template>
+        </ElTableColumn>
         <ElTableColumn label="商品图片" prop="goods_image" min-width="120" align="center">
           <template #default="scope">
             <ElImage
@@ -76,12 +93,37 @@
         </ElTableColumn>
         <ElTableColumn label="单独入库图片" prop="in_image" min-width="220" align="center">
           <template #default="scope">
-            <IUploadImage :limit="5" :data="scope.row._image" @success="value => onItemImageUpload(scope.row, value)" />
+            <IUploadImage
+              :limit="5"
+              :data="scope.row._image"
+              :disabled="isSigned(scope.row)"
+              @success="value => onItemImageUpload(scope.row, value)"
+            />
           </template>
         </ElTableColumn>
       </ElTable>
     </div>
   </div>
+  <ElDialog
+    v-model="batchDialog.visible"
+    title="批量签收"
+    width="520px"
+    class="dialog-container"
+    append-to-body
+    draggable
+    :close-on-click-modal="false"
+  >
+    <div class="batch-upload">
+      <div class="upload-label">签收图片：</div>
+      <IUploadImage :limit="5" :data="batchDialog.image" @success="value => (batchDialog.image = value)" />
+    </div>
+    <template #footer>
+      <div class="dialog-footer">
+        <ElButton @click="batchDialog.visible = false">取消</ElButton>
+        <ElButton type="primary" :loading="batchDialog.loading" @click="onBatchSignConfirm">确认</ElButton>
+      </div>
+    </template>
+  </ElDialog>
   <ElImageViewer v-if="showPreview" :url-list="srcList" :initial-index="0" @close="showPreview = false" />
 </template>
 
@@ -92,9 +134,11 @@ import { ElImage, ElImageViewer } from "element-plus";
 import _ from "tddev/utils";
 import { Message } from "@/global/const";
 import { apiOrderReceiptDetail, apiOrderReceiptSaveDraft, apiOrderReceiptSubmit } from "@/api/warehouse";
+import { normalizeOrderDetail, pickFirstValue } from "../aux_modules/orderDetail";
 
 const Router = useRouter();
 const Route = useRoute();
+const tableRef = ref();
 const showPreview = ref(false);
 const srcList = ref<string[]>([]);
 
@@ -103,7 +147,7 @@ const pageModel = reactive<Obj>({
   saveLoading: false,
   submitLoading: false,
   id: Route.query.id as string,
-  commonImage: "",
+  selection: [],
   data: {
     shop_name: "",
     shipping_address: "",
@@ -111,6 +155,12 @@ const pageModel = reactive<Obj>({
     order_sn: "",
     list: [],
   },
+});
+
+const batchDialog = reactive({
+  visible: false,
+  loading: false,
+  image: "",
 });
 
 const onBack = () => {
@@ -123,10 +173,12 @@ const onTableRequest = async () => {
     order_id: pageModel.id,
   });
   if (success) {
+    const detail = normalizeOrderDetail(data);
     pageModel.data = {
-      ...data,
-      list: _utilsWithDefaults(data.list),
+      ...detail,
+      list: withDefaults(detail.list),
     };
+    pageModel.selection = [];
   } else {
     Message.warning(message);
   }
@@ -135,31 +187,59 @@ const onTableRequest = async () => {
 
 onTableRequest();
 
-const _utilsWithDefaults = (list: Obj[]) => {
+const withDefaults = (list: Obj[]) => {
   return (list || []).map(item => ({
     ...item,
+    sign_status: item.sign_status || (item.signed_at || item.in_image ? "signed" : "pending"),
     _in_count: getDefaultInCount(item),
     _out_count: getDefaultOutCount(item),
-    _image: item.in_image || "",
+    _image: item.in_image || item.image || "",
   }));
 };
 
-const getDefaultInCount = (item: Obj) => {
-  const value = item.in_count || item.send_number || 0;
-  return Number(value);
-};
-
-const getDefaultOutCount = (item: Obj) => {
-  const value = item.out_count || 0;
-  return Number(value);
-};
-
+const getDefaultInCount = (item: Obj) => Number(pickFirstValue(item, ["in_count", "send_number", "goods_number"]) || 0);
+const getDefaultOutCount = (item: Obj) => Number(pickFirstValue(item, ["out_count"]) || 0);
 const getPrecision = (item: Obj) => (item.measure_type === 1 ? 2 : 0);
-
 const getStep = (item: Obj) => (item.measure_type === 1 ? 0.01 : 1);
+const isSigned = (item: Obj) => item.sign_status === "signed";
+const isRowSelectable = (row: Obj) => !isSigned(row);
 
-const onCommonImageUpload = (value: string) => {
-  pageModel.commonImage = value;
+const onSelectionChange = (selection: Obj[]) => {
+  pageModel.selection = selection;
+};
+
+const onBatchSignOpen = () => {
+  if (pageModel.selection.length === 0) return;
+  batchDialog.image = "";
+  batchDialog.visible = true;
+};
+
+const onBatchSignConfirm = async () => {
+  if (!batchDialog.image) {
+    Message.warning("请上传签收图片");
+    return;
+  }
+  const list = pageModel.selection.map((item: Obj) => ({
+    id: item.id,
+    image: batchDialog.image,
+    in_image: batchDialog.image,
+    in_house_count: Number(item._in_count),
+    out_count: Number(item._out_count),
+  }));
+  if (!validateSubmitList(list)) return;
+  batchDialog.loading = true;
+  const { success, message } = await apiOrderReceiptSubmit({
+    order_id: pageModel.id,
+    list,
+  });
+  batchDialog.loading = false;
+  if (success) {
+    Message.success("批量签收成功，当前订单显示部分签收");
+    batchDialog.visible = false;
+    onTableRequest();
+  } else {
+    Message.warning(message);
+  }
 };
 
 const onItemImageUpload = (row: Obj, value: string) => {
@@ -167,23 +247,25 @@ const onItemImageUpload = (row: Obj, value: string) => {
 };
 
 const buildSubmitList = () => {
-  const commonImage = pageModel.commonImage;
-  return (pageModel.data.list || []).map((item: Obj) => ({
-    id: item.id,
-    image: item._image || commonImage,
-    in_house_count: Number(item._in_count),
-    out_count: Number(item._out_count),
-  }));
+  return (pageModel.data.list || [])
+    .filter((item: Obj) => !isSigned(item))
+    .map((item: Obj) => ({
+      id: item.id,
+      image: item._image,
+      in_image: item._image,
+      in_house_count: Number(item._in_count),
+      out_count: Number(item._out_count),
+    }));
 };
 
 const validateSubmitList = (list: Obj[]) => {
   if (list.length === 0) {
-    Message.warning("收货商品列表为空");
+    Message.warning("请选择或填写待签收商品");
     return false;
   }
   for (const item of list) {
-    if (!item.image) {
-      Message.warning("请上传入库图片");
+    if (!item.image && !item.in_image) {
+      Message.warning("请上传签收图片");
       return false;
     }
     if (!Number.isFinite(item.in_house_count) || item.in_house_count <= 0) {
@@ -223,17 +305,9 @@ const onSubmitOrder = async () => {
   const list = buildSubmitList();
   if (!validateSubmitList(list)) return;
   pageModel.submitLoading = true;
-  const saveResult = await apiOrderReceiptSaveDraft({
-    order_id: pageModel.id,
-    list,
-  });
-  if (!saveResult.success) {
-    pageModel.submitLoading = false;
-    Message.warning(saveResult.message);
-    return;
-  }
   const submitResult = await apiOrderReceiptSubmit({
     order_id: pageModel.id,
+    list,
   });
   pageModel.submitLoading = false;
   if (submitResult.success) {
@@ -269,12 +343,11 @@ const onPreview = (val: string[]) => {
     flex: none;
     background: var(--el-color-white);
     border-radius: var(--radius-lg);
-    .title {
+    .title,
+    .handle {
       display: flex;
       align-items: center;
-      & > * {
-        margin-right: var(--gap);
-      }
+      gap: var(--gap);
     }
   }
   .detail-content {
@@ -302,21 +375,15 @@ const onPreview = (val: string[]) => {
       }
     }
   }
-  .upload-content {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: var(--gap);
-    background: var(--el-color-white);
-    border-radius: var(--radius-lg);
-    margin-bottom: 12px;
-    .upload-label {
-      flex: none;
-      padding-top: 12px;
-      font-weight: 600;
-      font-size: 16px;
-      line-height: 24px;
-    }
+}
+.batch-upload {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  .upload-label {
+    flex: none;
+    padding-top: 12px;
+    font-weight: 600;
   }
 }
 </style>

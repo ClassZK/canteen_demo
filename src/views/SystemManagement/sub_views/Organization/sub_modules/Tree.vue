@@ -40,7 +40,7 @@ const treeModel = reactive<Obj>({
   props: {
     label: "name",
     value: "id",
-    children: "child",
+    children: "children",
   },
   keyword: "",
   data: [],
@@ -72,13 +72,13 @@ const getApiOrganizationTree = async () => {
         await nextTick();
         treeRef.value?.setCurrentKey(currentNode.id);
       } else {
-        currentNodeKey.value = "";
-        defaultCheckedKeys.value = [];
-        treeModel.checked = {
-          id: "",
-          name: "",
-          children: [],
-        };
+        const firstNode = treeModel.data[0];
+        currentNodeKey.value = firstNode.id;
+        defaultCheckedKeys.value = [firstNode.id];
+        treeModel.checked = firstNode;
+        await nextTick();
+        treeRef.value?.setCurrentKey(firstNode.id);
+        emits("change", firstNode);
       }
     } else {
       currentNodeKey.value = "";
@@ -152,15 +152,16 @@ watch(
 
 defineExpose({
   clearCurrent: () => {
-    currentNodeKey.value = "";
-    defaultCheckedKeys.value = [];
-    treeModel.checked = {
-      id: "",
-      name: "",
-      children: [],
-    };
-    treeRef.value?.setCurrentKey();
+    const firstNode = treeModel.data[0];
+    if (firstNode) {
+      currentNodeKey.value = firstNode.id;
+      defaultCheckedKeys.value = [firstNode.id];
+      treeModel.checked = firstNode;
+      treeRef.value?.setCurrentKey(firstNode.id);
+      emits("change", firstNode);
+    }
   },
+  getCurrent: () => treeModel.checked,
 });
 </script>
 

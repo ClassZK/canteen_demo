@@ -17,7 +17,7 @@
       <table>
         <tbody>
           <tr><th>消杀日期</th><td>{{ formModel.data.disinfection_date }}</td></tr>
-          <tr><th>消杀公司</th><td>{{ formModel.data.disinfection_company }}</td></tr>
+          <tr><th>消杀区域</th><td>{{ optionText(formModel.data.disinfection_area, CanteenAreaList) }}</td></tr>
           <tr><th>操作人员</th><td>{{ formModel.data.operator }}</td></tr>
           <tr><th>消杀内容（具体写灭鼠、灭虫等）</th><td>{{ optionText(formModel.data.disinfection_content, FourPestContentList) }}</td></tr>
           <tr><th>操作是否规范</th><td>{{ optionText(formModel.data.operation_standard, CheckResultList) }}</td></tr>
@@ -41,8 +41,10 @@
             </ElFormItem>
           </ElCol>
           <ElCol :span="12">
-            <ElFormItem label="消杀公司" prop="disinfection_company">
-              <ElInput v-model.trim="formModel.data.disinfection_company" maxlength="50" show-word-limit clearable placeholder="请输入消杀公司"></ElInput>
+            <ElFormItem label="消杀区域" prop="disinfection_area">
+              <ElSelect v-model="formModel.data.disinfection_area" filterable clearable placeholder="请选择消杀区域">
+                <ElOption v-for="item in CanteenAreaList" :key="item.value" :label="item.name" :value="item.value"></ElOption>
+              </ElSelect>
             </ElFormItem>
           </ElCol>
           <ElCol :span="12">
@@ -89,7 +91,7 @@
 <script lang="ts" setup>
 import { ref, reactive, watch } from "vue";
 import { useFourPestDisinfectionAuxStore } from "../aux_modules/store";
-import { OperationTypeEnum, OperationTypeName, Message, FourPestContentList, CheckResultList } from "@/global/const";
+import { OperationTypeEnum, OperationTypeName, Message, FourPestContentList, CheckResultList, CanteenAreaList } from "@/global/const";
 import { apiFourPestDisinfectionUpdate } from "@/api/inspection";
 
 const FourPestDisinfectionAuxStore = useFourPestDisinfectionAuxStore();
@@ -98,7 +100,7 @@ const formRef = ref();
 const formInitial = () => ({
   id: "",
   disinfection_date: "",
-  disinfection_company: "",
+  disinfection_area: "",
   operator: "",
   disinfection_content: "",
   _disinfection_content: [] as string[],
@@ -115,7 +117,7 @@ const formModel = reactive({
   isDetail: false,
   rules: {
     disinfection_date: [{ required: true, message: "请选择消杀日期", trigger: ["change", "blur"] }],
-    disinfection_company: [{ required: true, message: "请输入消杀公司", trigger: ["change", "blur"] }],
+    disinfection_area: [{ required: true, message: "请选择消杀区域", trigger: ["change", "blur"] }],
     operator: [{ required: true, message: "请输入操作人员", trigger: ["change", "blur"] }],
     _disinfection_content: [{ type: "array", required: true, message: "请选择消杀内容", trigger: ["change", "blur"] }],
     operation_standard: [{ required: true, message: "请选择操作是否规范", trigger: ["change", "blur"] }],

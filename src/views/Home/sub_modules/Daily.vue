@@ -59,12 +59,6 @@
         </div>
       </ElCol>
       <ElCol :sm="12" :md="8" :lg="6" :xl="4">
-        <div class="chunk" @click="onPath('mealAccompaniment')">
-          <p>陪餐记录</p>
-          <img class="icon" src="@/assets/image/10820.png" />
-        </div>
-      </ElCol>
-      <ElCol :sm="12" :md="8" :lg="6" :xl="4">
         <div class="chunk" @click="onPath('leadershipInspection')">
           <p>视察记录</p>
           <img class="icon" src="@/assets/image/10821.png" />

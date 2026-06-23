@@ -4,13 +4,13 @@
     <div class="layout-table">
       <div class="query-container">
         <div class="query-left">
-          <ElForm><ElFormItem label="菜品名称" prop="name">
+          <ElForm><ElFormItem label="食材名称" prop="name">
               <ElInput
                 v-model="tableModel.query.name"
                 maxlength="30"
                 show-word-limit
                 clearable
-                placeholder="菜品名称"
+                placeholder="食材名称"
               ></ElInput>
             </ElFormItem>
           </ElForm>
@@ -24,55 +24,88 @@
       <div class="table-container">
         <ElTable height="100%" default-expand-all scrollbar-always-on :data="pageData"><ElTableColumn type="expand">
             <template #default="props">
-              <ElTable :data="props.row.list">
-                <ElTableColumn
-                  label="材料名称"
-                  prop="pro_name"
-                  min-width="100"
-                  align="center"
-                  show-overflow-tooltip
-                ></ElTableColumn>
-                <ElTableColumn
-                  label="食材编号"
-                  prop="pro_no"
-                  min-width="100"
-                  align="center"
-                  show-overflow-tooltip
-                ></ElTableColumn>
-                <ElTableColumn
-                  label="规格"
-                  prop="specification"
-                  min-width="100"
-                  align="center"
-                  show-overflow-tooltip
-                ></ElTableColumn>
-                <ElTableColumn
-                  label="单位"
-                  prop="unit"
-                  min-width="100"
-                  align="center"
-                  show-overflow-tooltip
-                ></ElTableColumn>
-                <ElTableColumn label="库存数量" prop="count" min-width="100" align="center" show-overflow-tooltip>
-                  <template #default="scope">
-                    {{ _utils.KtoJ(scope.row?.count || 0, scope.row?.measure_type) }}
+              <ElTable :data="props.row.dishes" default-expand-all>
+                <ElTableColumn type="expand">
+                  <template #default="dishProps">
+                    <ElTable :data="dishProps.row.ingredients">
+                      <ElTableColumn
+                        label="食材名称"
+                        prop="pro_name"
+                        min-width="100"
+                        align="center"
+                        show-overflow-tooltip
+                      ></ElTableColumn>
+                      <ElTableColumn
+                        label="食材编号"
+                        prop="pro_no"
+                        min-width="100"
+                        align="center"
+                        show-overflow-tooltip
+                      ></ElTableColumn>
+                      <ElTableColumn
+                        label="规格"
+                        prop="specification"
+                        min-width="100"
+                        align="center"
+                        show-overflow-tooltip
+                      ></ElTableColumn>
+                      <ElTableColumn
+                        label="单位"
+                        prop="unit"
+                        min-width="100"
+                        align="center"
+                        show-overflow-tooltip
+                      ></ElTableColumn>
+                      <ElTableColumn label="库存量" prop="count" min-width="100" align="center" show-overflow-tooltip>
+                        <template #default="scope">
+                          {{ _utils.KtoJ(scope.row?.count || 0, scope.row?.measure_type) }}
+                        </template>
+                      </ElTableColumn>
+                      <ElTableColumn label="食材所需数量" prop="need_count" min-width="120" align="center" show-overflow-tooltip>
+                        <template #default="scope">
+                          {{ _utils.KtoJ(scope.row?.need_count || 0, scope.row?.measure_type) }}
+                        </template>
+                      </ElTableColumn>
+                      <ElTableColumn label="推荐采购数量" prop="order_count" min-width="120" align="center" show-overflow-tooltip>
+                        <template #default="scope">
+                          {{ _utils.KtoJ(scope.row?.order_count || 0, scope.row?.measure_type) }}
+                        </template>
+                      </ElTableColumn>
+                    </ElTable>
                   </template>
                 </ElTableColumn>
-                <ElTableColumn label="采购数量" prop="order_count" min-width="100" align="center" show-overflow-tooltip>
-                  <template #default="scope">
-                    {{ _utils.KtoJ(scope.row?.order_count || 0, scope.row?.measure_type) }}
-                  </template>
-                </ElTableColumn>
+                <ElTableColumn
+                  label="菜品名称"
+                  prop="dish_name"
+                  min-width="150"
+                  align="center"
+                  show-overflow-tooltip
+                ></ElTableColumn>
+                <ElTableColumn
+                  label="食材用量"
+                  prop="ingredient_usage"
+                  min-width="220"
+                  align="center"
+                  show-overflow-tooltip
+                ></ElTableColumn>
+                <ElTableColumn
+                  label="准备份数"
+                  prop="prepare_count"
+                  min-width="100"
+                  align="center"
+                  show-overflow-tooltip
+                ></ElTableColumn>
               </ElTable>
             </template>
           </ElTableColumn>
           <ElTableColumn
-            label="供应商名称"
-            prop="supplier_name"
+            label="日期"
+            prop="date"
             min-width="100"
             align="center"
             show-overflow-tooltip
           ></ElTableColumn>
+          <ElTableColumn label="星期" prop="week" min-width="100" align="center" show-overflow-tooltip></ElTableColumn>
         </ElTable>
       </div>
     </div>
@@ -110,7 +143,7 @@ const onTableRequest = async () => {
   const params: Obj = { name: tableModel.query.name, id: route.query.id || "" };
   const { success, message, data } = await apiCanteenPurchaseSuggestionDetail(params);
   if (success) {
-    pageData.value = groupArrBySupplier(_utils.getDefaultArray(data.suggestion));
+    pageData.value = formatDayItems(data.day_items || data.suggestion);
   } else {
     console.error("查询失败:", message);
   }
@@ -118,21 +151,51 @@ const onTableRequest = async () => {
 };
 onTableRequest();
 
-const groupArrBySupplier = (arr: Obj[]) => {
-  const supplierMap = new Map();
-  arr.forEach(item => {
-    const { supplier_id, supplier_name } = item;
+const formatDayItems = (source: Obj[]) => {
+  const arr = _utils.getDefaultArray(source);
+  if (arr.some(item => Array.isArray(item.dishes))) {
+    return arr.map(item => ({
+      ...item,
+      date: item.date || item.meal_date || "",
+      week: item.week || getWeekText(item.date || item.meal_date || ""),
+      dishes: _utils.getDefaultArray(item.dishes),
+    }));
+  }
+  return groupArrByDate(arr);
+};
 
-    if (!supplierMap.has(supplier_id)) {
-      supplierMap.set(supplier_id, {
-        supplier_id: supplier_id,
-        supplier_name: supplier_name,
-        list: [],
+const groupArrByDate = (arr: Obj[]) => {
+  const dayMap = new Map();
+  arr.forEach(item => {
+    const date = item.date || item.meal_date || "";
+    if (!dayMap.has(date)) {
+      dayMap.set(date, {
+        date,
+        week: item.week || getWeekText(date),
+        dishes: [],
       });
     }
-    supplierMap.get(supplier_id).list.push(item);
+    const key = item.dish_id || item.dish_name || item.pro_name;
+    let dish = dayMap.get(date).dishes.find((dishItem: Obj) => (dishItem.dish_id || dishItem.dish_name) === key);
+    if (!dish) {
+      dish = {
+        dish_id: item.dish_id || key,
+        dish_name: item.dish_name || item.pro_name,
+        prepare_count: item.prepare_count || 0,
+        ingredient_usage: item.usage_text || "",
+        ingredients: [],
+      };
+      dayMap.get(date).dishes.push(dish);
+    }
+    dish.ingredients.push(item);
   });
-  return Array.from(supplierMap.values());
+  return Array.from(dayMap.values());
+};
+
+const getWeekText = (date: string) => {
+  if (!date) return "";
+  const day = new Date(date).getDay();
+  return _utils.weekDays[day] || "";
 };
 
 /** 重置 */

@@ -44,41 +44,22 @@ const menuModel = reactive({
   data: [] as Obj[],
 });
 
+const managerRoleCodes = ["platform_admin", "project_manager", "canteen_manager"];
+const getActiveRoleCode = (user: Obj) => {
+  const roleId = Storage.get("roleID") || user?.role_id;
+  const role = Array.isArray(user?.roles) ? user.roles.find((item: Obj) => item.role_id === roleId || item.id === roleId) : null;
+  return role?.role_code || role?.code || user?.role_code;
+};
+
 const isRouteVisibleForScope = (route: Obj, user: Obj) => {
-  if (route.meta?.platformOnly && user?.user_scope !== "platform") return false;
-  if (route.meta?.canteenManagerOnly && !(user?.user_scope === "canteen" && user?.rule === "*")) return false;
   return true;
 };
 
 /** 路由菜单 */
 const setMenuData = () => {
   const SystemUserinfo: Obj = Storage.get("SystemUserinfo") ?? {};
-  const rules = _.getArray((SystemUserinfo?.rule ?? "").split(","));
   let menuData: Obj[] = [];
-  if (SystemUserinfo.rule === "*") {
-    menuData = LayoutChildrenRoutes.filter(route => {
-      if (route.meta?.hiddenMenu) return false;
-      if (!isRouteVisibleForScope(route, SystemUserinfo)) return false;
-      return true;
-    });
-  } else {
-    for (const item of LayoutChildrenRoutes) {
-      if (!item.meta.hiddenMenu) {
-        if (!isRouteVisibleForScope(item, SystemUserinfo)) continue;
-        if (item.meta?.rolesAny) {
-          if (_utils.permissionAnyFilter(item.meta.rolesAny)) {
-            menuData.push(item);
-          }
-        } else if (item.meta?.role) {
-          if (rules.includes(item.meta.role)) {
-            menuData.push(item);
-          }
-        } else {
-          menuData.push(item);
-        }
-      }
-    }
-  }
+  menuData = LayoutChildrenRoutes.filter(route => !route.meta?.hiddenMenu && isRouteVisibleForScope(route, SystemUserinfo));
   menuModel.data = menuData;
   menuModel.visible = true;
 };

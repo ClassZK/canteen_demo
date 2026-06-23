@@ -18,7 +18,7 @@ const importModel = reactive({
     visible: false,
     loading: false,
     type: 'canteenStaff',
-    name: '管理员管理'
+    name: '人员管理'
 });
 
 const onSuccess = () => {

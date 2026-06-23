@@ -16,6 +16,21 @@
           </template>
         </ElDropdown>
       </div>
+      <div v-if="showRoleSwitcher" class="dropdown">
+        <ElDropdown popper-class="dropdown-container">
+          <div class="trigger">
+            <p class="name">{{ currentRole }}</p>
+            <ElIcon><ArrowDown /></ElIcon>
+          </div>
+          <template #dropdown>
+            <ElDropdownMenu>
+              <ElDropdownItem @click="onDropdownRole(item)" v-for="item in roles" :key="item.role_id">
+                {{ item.role_name }}
+              </ElDropdownItem>
+            </ElDropdownMenu>
+          </template>
+        </ElDropdown>
+      </div>
       <div class="notification" @click="onNotifyPath">
         <ElIcon><Bell /></ElIcon>
       </div>
@@ -68,8 +83,16 @@ const Router = useRouter();
 const systemUserinfo: Obj = ref({});
 const MenuStore = useMenuStore();
 const currentOrg = ref("");
+const currentRole = ref("");
 const orgs: Obj[] = Storage.get("Orgs") ?? [];
-const showOrgSwitcher = computed(() => systemUserinfo.value?.user_scope !== "platform");
+const roles = computed<Obj[]>(() => systemUserinfo.value?.roles ?? []);
+const activeRoleCode = computed(() => {
+  const roleId = Storage.get("roleID") || systemUserinfo.value?.role_id;
+  const role = roles.value.find(item => item.role_id === roleId) || {};
+  return role.role_code || role.code || systemUserinfo.value?.role_code;
+});
+const showOrgSwitcher = computed(() => activeRoleCode.value === "project_manager" && orgs.length > 1);
+const showRoleSwitcher = computed(() => roles.value.length > 1);
 /** 退出登录 */
 const onLogout = () => {
   ElMessageBox.alert("确定退出登录吗？", "温馨提示", {
@@ -123,6 +146,25 @@ const onDropdownOrg = (data: Obj) => {
   window.location.reload();
 };
 
+/** 切换角色 */
+const onDropdownRole = (data: Obj) => {
+  if (data?.role_id === Storage.get("roleID")) {
+    return;
+  }
+  const user = Storage.get("SystemUserinfo") ?? {};
+  Storage.set("roleID", data.role_id);
+  const nextUser = {
+    ...user,
+    role_id: data.role_id,
+    role_code: data.role_code || data.code,
+    role_name: data.role_name,
+    rule: data.rule,
+  };
+  Storage.set("SystemUserinfo", nextUser);
+  currentRole.value = data.role_name;
+  window.location.reload();
+};
+
 const onNotifyPath = () => {
   MenuStore.$patch(state => {
     state.refresh = new Date().getTime();
@@ -133,6 +175,8 @@ const onNotifyPath = () => {
 onMounted(() => {
   systemUserinfo.value = Storage.get("SystemUserinfo") ?? {};
   currentOrg.value = orgs.find(item => item.org_id === Storage.get("orgID"))?.org_name || "";
+  currentRole.value =
+    roles.value.find(item => item.role_id === Storage.get("roleID"))?.role_name || systemUserinfo.value?.role_name || "";
 });
 </script>
 

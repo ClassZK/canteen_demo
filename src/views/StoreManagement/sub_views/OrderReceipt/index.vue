@@ -3,8 +3,8 @@
     <div class="query-container">
       <div class="query-left">
         <ElForm ref="formRef" :model="tableModel.query">
-          
-          <IPlatformOrgFilter></IPlatformOrgFilter><ElFormItem label="订单状态" prop="status">
+          <IPlatformOrgFilter></IPlatformOrgFilter>
+          <ElFormItem label="订单状态" prop="status">
             <ElSelect v-model="tableModel.query.status" placeholder="请选择订单状态" @change="onTableSearch">
               <ElOption label="待收货" value="pending"></ElOption>
               <ElOption label="已收货" value="receipted"></ElOption>
@@ -19,8 +19,8 @@
     </div>
     <div class="table-container">
       <ElTable height="100%" scrollbar-always-on :data="tableModel.data">
-        
-        <IPlatformOrgColumn></IPlatformOrgColumn><ElTableColumn label="供应商名称" prop="shop_name" align="center" min-width="180" show-overflow-tooltip />
+        <IPlatformOrgColumn></IPlatformOrgColumn>
+        <ElTableColumn label="供应商名称" prop="shop_name" align="center" min-width="180" show-overflow-tooltip />
         <ElTableColumn label="收货地址" prop="shipping_address" min-width="220" align="center" show-overflow-tooltip />
         <ElTableColumn label="下单时间" prop="order_time" min-width="170" align="center" show-overflow-tooltip />
         <ElTableColumn label="商品数量" prop="goods_total" min-width="120" align="center" show-overflow-tooltip />
@@ -41,12 +41,7 @@
         </ElTableColumn>
       </ElTable>
     </div>
-    <IPage
-      :total="tableModel.total"
-      :page="tableModel.query.page"
-      :size="tableModel.query.size"
-      @change="onTablePage"
-    ></IPage>
+    <IPage :total="tableModel.total" :page="tableModel.query.page" :size="tableModel.query.size" @change="onTablePage"></IPage>
   </div>
 </template>
 
@@ -128,19 +123,16 @@ const onTableSign = (data: Obj) => {
 };
 
 const getStatusText = (data: Obj) => {
-  if (tableModel.query.status === "pending") {
-    return "待收货";
-  }
+  if (data.receipt_status === "partial" || data.status === "部分签收") return "部分签收";
+  if (tableModel.query.status === "pending") return "待收货";
   return Number(data.status) === 2 ? "已确认" : "待入库确认";
 };
 
 const getStatusTagType = (data: Obj) => {
-  if (tableModel.query.status === "pending") {
-    return "warning";
-  }
+  if (data.receipt_status === "partial" || data.status === "部分签收") return "primary";
+  if (tableModel.query.status === "pending") return "warning";
   return Number(data.status) === 2 ? "success" : "primary";
 };
-
 </script>
 
 <style lang="scss" scoped></style>

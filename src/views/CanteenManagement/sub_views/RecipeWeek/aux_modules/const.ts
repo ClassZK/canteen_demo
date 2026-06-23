@@ -39,11 +39,13 @@ export const onRecipeWeekDataFilter = (data: Obj) => {
     let weekData: Obj = {}, weekMealtimes: Obj[] = [], weekChecked: Obj = {};
 
     if (data && Reflect.ownKeys(data).length > 0) {
+        const weekStart = data.date_start || currentWeek.start;
+        const weekEnd = data.date_end || currentWeek.end;
         weekChecked = {
             id: data.id,
             name: data.recipe_name,
-            weekStart: data.date_start,
-            weekEnd: data.date_end,
+            weekStart,
+            weekEnd,
         };
 
         /** 星期 */
@@ -74,17 +76,19 @@ export const onRecipeWeekDataFilter = (data: Obj) => {
                     object.data.push({
                         id: item.dish_id,
                         name: item.dish_name,
+                        price: item.price ?? item.dish_price ?? 0,
                     });
                 }
             }
             return mealtimes;
         }
 
-        for (const item of data.list) {
+        for (const item of currentWeeks) {
+            const source = _utils.getDefaultArray(data.list).find((el: Obj) => el.date === item.date) || { date: item.date, list: [] };
             weekData[item.date] = {
                 date: item.date,
-                week: weekFilter(item.date),
-                mealtimes: mealtimesFilter(item.list),
+                week: item.week || weekFilter(item.date),
+                mealtimes: mealtimesFilter(source.list),
             };
         }
     }

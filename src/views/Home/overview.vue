@@ -348,7 +348,6 @@ const dailyManageBaseItems = [
   { label: "安全自查", name: "safetySelfInspection", icon: iconSafetySelfInspection, displayLabel: "食安自查" },
   { label: "废弃物处置", name: "wasteDisposal", icon: iconWasteDisposal },
   { label: "添加剂使用", name: "foodDdditiveUsage", icon: iconFoodDdditiveUsage },
-  { label: "陪餐记录", name: "mealAccompaniment", icon: iconMealAccompaniment },
 ];
 
 const shortcuts = dailyManageBaseItems.map(item => ({

@@ -117,11 +117,11 @@ import { reactive, ref } from "vue";
 import { ElImage, ElImageViewer } from "element-plus";
 import { apiConfirmListDetail } from "@/api/warehouse";
 import { Message } from "@/global/const";
-import _utils from "@/utils/index";
 import Form from "./Form.vue";
 import EditForm from "./Edit.vue";
 import _ from "tddev/utils";
 import { useConfirmListStoreAuxStore } from "./aux_modules/store";
+import { normalizeOrderDetail } from "../aux_modules/orderDetail";
 const confirmListStoreAuxStore = useConfirmListStoreAuxStore();
 const showPreview = ref(false);
 const srcList = ref<string[]>([]);
@@ -157,7 +157,7 @@ const onTableRequest = async () => {
     order_id: tableModel.id,
   });
   if (success) {
-    tableModel.data = data;
+    tableModel.data = normalizeOrderDetail(data);
   } else {
     Message.warning(message);
   }

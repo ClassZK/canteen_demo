@@ -179,10 +179,8 @@ const onGetDetail = async () => {
   if (success) {
     formModel.checked = data;
     /** 巡检结果 */
-    formModel.disabled = formModel.checked.status === HandleStatusEnum.Handled;
-    if (formModel.disabled) {
-      formModel.data.process_desc = formModel.checked.process_desc;
-    }
+    formModel.disabled = false;
+    formModel.data.process_desc = formModel.checked.process_desc || formModel.data.process_desc;
     tableModel.data = _utils.getDefaultArray(formModel.checked.items);
   } else {
     Message.warning(message);

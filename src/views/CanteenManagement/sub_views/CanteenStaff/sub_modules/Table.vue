@@ -86,6 +86,7 @@
         </ElTableColumn>
 
         <ElTableColumn label="岗位" prop="position" min-width="150" align="center" show-overflow-tooltip></ElTableColumn>
+        <ElTableColumn label="直属上级" prop="superior_name" min-width="150" align="center" show-overflow-tooltip></ElTableColumn>
         <ElTableColumn label="性别" prop="_sex" min-width="150" align="center" show-overflow-tooltip></ElTableColumn>
         <ElTableColumn label="年龄" prop="age" min-width="150" align="center" show-overflow-tooltip></ElTableColumn>
         <ElTableColumn

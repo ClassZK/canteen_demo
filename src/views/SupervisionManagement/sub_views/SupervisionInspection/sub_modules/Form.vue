@@ -17,8 +17,8 @@
         ref="formRef"
         :model="formModel.data"
         :rules="formModel.rules"
-        disabled
-        hide-required-asterisk
+        :disabled="formModel.disabled"
+        :hide-required-asterisk="formModel.disabled"
         scroll-to-error
         label-width="80px"
         label-position="top"
@@ -54,7 +54,7 @@
           </ElCol>
           <ElCol>
             <ElFormItem label="督办任务" prop="task">
-              <IUploadImage :data="formModel.data.task" disabled @success="onUploadImage"></IUploadImage>
+              <IUploadImage :data="formModel.data.task" :disabled="formModel.disabled" @success="onUploadImage"></IUploadImage>
             </ElFormItem>
           </ElCol>
           <template v-if="formModel.data.processor_name">
@@ -86,7 +86,7 @@
     <template #footer>
       <div class="dialog-footer">
         <ElButton @click="formModel.visible = false">取消</ElButton>
-        <!-- <ElButton type="primary" :loading="formModel.loading" @click="onFormConfirm">确定</ElButton> -->
+        <ElButton v-if="!formModel.disabled" type="primary" :loading="formModel.loading" @click="onFormConfirm">确定</ElButton>
       </div>
     </template>
   </ElDialog>
@@ -185,13 +185,18 @@ const onFormClosed = () => {
 watch(
   () => SupervisionInspectionAuxStore.OperationType,
   type => {
-    if (type === OperationTypeEnum.detail) {
+    if ([OperationTypeEnum.add, OperationTypeEnum.detail].includes(type as OperationTypeEnum)) {
       formModel.visible = true;
       formModel.OperationTypeName = OperationTypeName[type as OperationTypeEnum];
-      /** 回显数据 */
-      const data = JSON.parse(JSON.stringify(SupervisionInspectionAuxStore.data));
-      formModel.checked = data;
-      onApiSupervisionDetail();
+      formModel.disabled = type === OperationTypeEnum.detail;
+      if (type === OperationTypeEnum.detail) {
+        const data = JSON.parse(JSON.stringify(SupervisionInspectionAuxStore.data));
+        formModel.checked = data;
+        onApiSupervisionDetail();
+      } else {
+        formModel.checked = formInitial();
+        formModel.data = formInitial();
+      }
     }
   }
 );

@@ -96,7 +96,7 @@ const onFormConfirm = () => {
             };
             const { success, message } = await apiSystemUserPasswordChange(query);
             if (success) {
-                Message.success(`管理员 ${formModel.checked.nick} 密码重置成功`);
+                Message.success(`人员 ${formModel.checked.nick} 密码重置成功`);
                 formModel.visible = false;
             } else {
                 Message.warning(message);

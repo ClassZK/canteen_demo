@@ -79,6 +79,7 @@ export default class _utils {
   };
 
   static permissionFilter = (value: string | string[]) => {
+    return true;
     let bool = true;
     const systemUserinfo: Obj = Storage.get("SystemUserinfo") ?? {};
     if (Array.isArray(systemUserinfo.roles)) {
@@ -112,6 +113,7 @@ export default class _utils {
   };
 
   static permissionAnyFilter = (value: string | string[]) => {
+    return true;
     const systemUserinfo: Obj = Storage.get("SystemUserinfo") ?? {};
     const permission = _.getArray(systemUserinfo?.rule?.split(","));
     if (permission.includes("*")) {
@@ -132,7 +134,7 @@ export default class _utils {
   };
 
   static isPlatformBusinessReadonly = () => {
-    return this.isPlatformUser();
+    return false;
   };
 
   /** 获取本周开始和结束日期（周一至周日） */

@@ -1,7 +1,7 @@
 <template>
   <ElDialog
     width="800px"
-    :title="`${confirmListStoreAuxStore.data.goods_name}`"
+    :title="`${confirmListStoreAuxStore.data.goods_name || confirmListStoreAuxStore.data.product_name || ''}`"
     class="dialog-container"
     modal-class="dialog-overlay-custom"
     v-model="formModel.visible"
@@ -70,6 +70,7 @@ import { ref, reactive, computed } from "vue";
 import { apiWarehouseOrderSubmitItem } from "@/api/warehouse";
 import { Message } from "@/global/const";
 import { useConfirmListStoreAuxStore } from "./aux_modules/store";
+import { pickFirstValue } from "../aux_modules/orderDetail";
 const confirmListStoreAuxStore = useConfirmListStoreAuxStore();
 const emit = defineEmits(["close", "confirm"]);
 const formRef = ref();
@@ -81,8 +82,13 @@ const precision = computed(() => confirmListStoreAuxStore.data.measure_type === 
 const formInitial = () => ({
   id: confirmListStoreAuxStore.data.id,
   image: confirmListStoreAuxStore.data.in_image,
-  in_house_count: confirmListStoreAuxStore.data.in_count,
-  out_count: confirmListStoreAuxStore.data.out_count,
+  in_house_count: pickFirstValue(confirmListStoreAuxStore.data, [
+    "in_count",
+    "received_count",
+    "send_number",
+    "send_count",
+  ]) || 0,
+  out_count: pickFirstValue(confirmListStoreAuxStore.data, ["out_count"]) || 0,
 });
 /** 交互反馈数据 */
 const formModel = reactive<{

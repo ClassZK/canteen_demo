@@ -2,8 +2,8 @@
  * meta 介绍：
  * title：路由名称。路由模块名称的展示和面包屑模块名称的展示。
  * icon：菜单前显示的图标。仅 LayoutChildrenRoutes 中的一级路由，图标参考 views -> Layout -> sub_modules -> SVG。
- * permission：路由权限标识。用于判断角色后是否有对应的页面访问权限，防止用户通过 URL 输入进入页面，需要和后端统一。
- * role：角色路由权限标识。与路由权限标识功能，用于控制页面访问权限。
+ * permission：路由权限标识。用于判断角色是否有对应的页面访问权限，防止用户通过 URL 输入进入页面，需要和后端统一。
+ * role：角色路由权限标识。与路由权限标识功能一致，用于控制页面访问权限。
  * hiddenMenu：是否显示菜单。true：不显示。
  * hiddenBreadcrumb：是否显示面包屑导航。true：不显示。
  * discardRouteName：页面刷新时是否保存当前菜单。true：不保存。
@@ -80,6 +80,24 @@ export const LayoutChildrenRoutes = [
         component: () => import("@/views/CanteenManagement/sub_views/RecipeWeek/index.vue"),
       },
       {
+        path: "/recipeWeekRecord",
+        name: "recipeWeekRecord",
+        meta: {
+          title: "食谱记录",
+          role: "weekly_recipe",
+        },
+        component: () => import("@/views/CanteenManagement/sub_views/RecipeWeekRecord/index.vue"),
+      },
+      {
+        path: "/recipeWeekRecordDetail",
+        name: "recipeWeekRecordDetail",
+        meta: {
+          title: "食谱详情",
+          hiddenMenu: true,
+        },
+        component: () => import("@/views/CanteenManagement/sub_views/RecipeWeekRecord/Detail.vue"),
+      },
+      {
         path: "/recipeWeekUpdate",
         name: "recipeWeekUpdate",
         meta: {
@@ -106,16 +124,6 @@ export const LayoutChildrenRoutes = [
           role: "recipe_pool",
         },
         component: () => import("@/views/CanteenManagement/sub_views/CanteenRecipe/index.vue"),
-      },
-      {
-        path: "/canteenStaff",
-        name: "canteenStaff",
-        meta: {
-          title: "从业人员",
-          // hiddenMenu: hideStaffMenu,
-          role: "employee_manage",
-        },
-        component: () => import("@/views/CanteenManagement/sub_views/CanteenStaff/index.vue"),
       },
       {
         path: "/recommendation",
@@ -408,22 +416,22 @@ export const LayoutChildrenRoutes = [
         component: () => import("@/views/ForewarningManagement/sub_views/IngredientExpired/index.vue"),
       },
       {
-        path: "/dailyPurchasePrice",
-        name: "dailyPurchasePrice",
+        path: "/certificateExpireWarning",
+        name: "certificateExpireWarning",
         meta: {
-          title: "日采购价格预警",
-          role: "day_purchase_price_warn",
+          title: "证件过期预警",
+          role: "certificate_expire_warn",
         },
-        component: () => import("@/views/ForewarningManagement/sub_views/DailyPurchasePrice/index.vue"),
+        component: () => import("@/views/ForewarningManagement/sub_views/CertificateExpireWarning/index.vue"),
       },
       {
-        path: "/monthlyPurchasePrice",
-        name: "monthlyPurchasePrice",
+        path: "/videoWarning",
+        name: "videoWarning",
         meta: {
-          title: "月采购价格预警",
-          role: "month_purchase_price_warn",
+          title: "视频预警",
+          role: "video_warn",
         },
-        component: () => import("@/views/ForewarningManagement/sub_views/MonthlyPurchasePrice/index.vue"),
+        component: () => import("@/views/ForewarningManagement/sub_views/VideoWarning/index.vue"),
       },
     ],
   },
@@ -529,15 +537,6 @@ export const LayoutChildrenRoutes = [
         component: () => import("@/views/FoodSafetyManagement/sub_views/FoodDdditiveUsage/index.vue"),
       },
       {
-        path: "/mealAccompaniment",
-        name: "mealAccompaniment",
-        meta: {
-          title: "陪餐记录",
-          role: "meal_record",
-        },
-        component: () => import("@/views/FoodSafetyManagement/sub_views/MealAccompaniment/index.vue"),
-      },
-      {
         path: "/leadershipInspection",
         name: "leadershipInspection",
         meta: {
@@ -633,12 +632,61 @@ export const LayoutChildrenRoutes = [
     ],
   },
   {
+    path: "/attendanceManagement",
+    name: "attendanceManagement",
+    meta: {
+      title: "考勤管理",
+      icon: "icon-gzjg",
+      role: "attendance_manage",
+    },
+    component: () => import("@/views/AttendanceManagement/sub_modules/Layout.vue"),
+    children: [
+      {
+        path: "/canteenStaff",
+        name: "canteenStaff",
+        meta: {
+          title: "从业人员",
+          role: "employee_manage",
+        },
+        component: () => import("@/views/CanteenManagement/sub_views/CanteenStaff/index.vue"),
+      },
+      {
+        path: "/attendanceSchedule",
+        name: "attendanceSchedule",
+        meta: {
+          title: "排班",
+          role: "attendance_schedule",
+        },
+        component: () => import("@/views/AttendanceManagement/sub_views/Schedule/index.vue"),
+      },
+      {
+        path: "/attendanceRecords",
+        name: "attendanceRecords",
+        meta: {
+          title: "考勤记录",
+          role: "attendance_records",
+        },
+        component: () => import("@/views/AttendanceManagement/sub_views/AttendanceRecords/index.vue"),
+      },
+      {
+        path: "/leaveApplication",
+        name: "leaveApplication",
+        meta: {
+          title: "请假申请",
+          role: "leave_application",
+        },
+        component: () => import("@/views/AttendanceManagement/sub_views/LeaveApplication/index.vue"),
+      },
+    ],
+  },
+  {
     path: "/systemManagement",
     name: "systemManagement",
     meta: {
       title: "系统管理",
       icon: "setting",
-      rolesAny: ["org_manage", "device_manage", "admin_manage", "canteen_role_manage", "canteen_user_manage"],
+      rolesAny: ["org_manage", "device_manage", "canteen_user_manage"],
+      managerOnly: true,
     },
     component: () => import("@/views/SystemManagement/sub_modules/Layout.vue"),
     children: [
@@ -660,26 +708,6 @@ export const LayoutChildrenRoutes = [
           role: "device_manage",
         },
         component: () => import("@/views/SystemManagement/sub_views/Equipment/index.vue"),
-      },
-      {
-        path: "/platformUser",
-        name: "platformUser",
-        meta: {
-          title: "管理员管理",
-          role: "admin_manage",
-          roleGroup: "sys",
-        },
-        component: () => import("@/views/SystemManagement/sub_views/SystemUser/index.vue"),
-      },
-      {
-        path: "/systemRole",
-        name: "systemRole",
-        meta: {
-          title: "角色管理",
-          role: "canteen_role_manage",
-          roleGroup: "canteen",
-        },
-        component: () => import("@/views/SystemManagement/sub_views/Role/index.vue"),
       },
       {
         path: "/systemUser",
@@ -785,3 +813,4 @@ export const NotLayoutRoutes = [
 
 /** 合并项目所有的路由 */
 export const routes = [...LayoutRoutes, ...NotLayoutRoutes];
+

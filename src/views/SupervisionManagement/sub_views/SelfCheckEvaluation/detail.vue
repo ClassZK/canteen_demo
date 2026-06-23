@@ -214,11 +214,9 @@ const onGetDetail = async () => {
     data.inspection_time = dateFilter(data.inspection_time);
     formModel.checked = data;
     /** 自查结论 */
-    formModel.disabled = [CheckStatusEnum.Pending, CheckStatusEnum.Finish].includes(formModel.checked.status);
-    if (formModel.disabled) {
-      formModel.data.conclusion = formModel.checked.conclusion;
-    }
-    formModel.showCheck = formModel.checked.status === CheckStatusEnum.Finish;
+    formModel.disabled = false;
+    formModel.data.conclusion = formModel.checked.conclusion || formModel.data.conclusion;
+    formModel.showCheck = false;
     tableModel.data = _utils.getDefaultArray(formModel.checked.list);
   } else {
     Message.warning(message);

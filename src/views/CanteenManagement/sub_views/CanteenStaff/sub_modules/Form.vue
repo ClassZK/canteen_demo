@@ -48,6 +48,18 @@
             </ElFormItem>
           </ElCol>
           <ElCol :span="12">
+            <ElFormItem label="直属上级" prop="superior_id">
+              <ElSelect v-model="formModel.data.superior_id" filterable clearable placeholder="请选择直属上级" @change="onSuperiorChange">
+                <ElOption
+                  v-for="item of superiorOptions"
+                  :key="item.id"
+                  :label="`${item.name}（${item.role_name}）`"
+                  :value="item.id"
+                ></ElOption>
+              </ElSelect>
+            </ElFormItem>
+          </ElCol>
+          <ElCol :span="12">
             <ElFormItem label="性别" prop="sex">
               <ElSelect v-model="formModel.data.sex" placeholder=" ">
                 <ElOption v-for="item of SexList" :key="item.value" :label="item.name" :value="item.value"></ElOption>
@@ -163,9 +175,11 @@ import { useCanteenStaffAuxStore } from "../aux_modules/store";
 import { validatorPhone, validatorIDCard, validatorAge } from "@/utils/Regexp/index";
 import { OperationTypeEnum, OperationTypeName, Message, SexList } from "@/global/const";
 import { apiCanteenStaffUpdate } from "@/api/recipe";
+import { apiAttendanceHandoverUsers } from "@/api/attendance";
 
 const CanteenStaffAuxStore = useCanteenStaffAuxStore();
 const formRef = ref();
+const superiorOptions = ref<Obj[]>([]);
 
 /** 输入数据 函数方式 */
 const formInitial = () => ({
@@ -174,6 +188,8 @@ const formInitial = () => ({
   phone: "",
   user_avatar_uri: "",
   position: "",
+  superior_id: "",
+  superior_name: "",
   sex: "",
   age: "",
   id_card: "",
@@ -196,6 +212,7 @@ const formModel = reactive<Obj>({
     user_name: [{ required: true, message: "请输入姓名", trigger: ["blur", "change"] }],
     user_avatar_uri: [{ required: true, message: "请上传照片", trigger: "change" }],
     position: [{ required: true, message: "请输入岗位", trigger: ["blur", "change"] }],
+    superior_id: [{ required: true, message: "请选择直属上级", trigger: "change" }],
     phone: [{ required: true, validator: validatorPhone(), trigger: ["blur", "change"] }],
     sex: [{ required: true, message: "请选择性别", trigger: "change" }],
     age: [{ required: true, validator: validatorAge(), trigger: ["blur", "change"] }],
@@ -216,6 +233,8 @@ const onFormConfirm = async () => {
       const params: Obj = { ...formModel.data };
       params.age = Number(params.age);
       params.sex = Number(params.sex);
+      const superior = superiorOptions.value.find(item => item.id === params.superior_id);
+      params.superior_name = superior?.name || params.superior_name || "";
       const { success, message } = await apiCanteenStaffUpdate(params);
       if (success) {
         // Message.success(`从业人员 ${formModel.data.user_name} ${formModel.OperationTypeName}成功`);
@@ -262,6 +281,20 @@ const handleCertificateSuccess = (res: string) => {
   formModel.data.certificate = res;
 };
 
+const onSuperiorChange = (id: string) => {
+  const superior = superiorOptions.value.find(item => item.id === id);
+  formModel.data.superior_name = superior?.name || "";
+};
+
+const loadSuperiorOptions = async () => {
+  const { success, data, message } = await apiAttendanceHandoverUsers();
+  if (success) {
+    superiorOptions.value = data?.list || [];
+  } else {
+    Message.warning(message || "获取直属上级失败");
+  }
+};
+
 const PractitionerStatusList = [
   { name: "在职", value: "0" },
   { name: "离职", value: "1" },
@@ -285,6 +318,7 @@ const getPractitionerStatusType = (status?: string | number | null) => {
 
 onMounted(() => {
   formModel.vLoading = false;
+  loadSuperiorOptions();
 });
 /** 监听操作类型 */
 watch(

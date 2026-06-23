@@ -71,6 +71,7 @@ import { ElImage, ElImageViewer } from "element-plus";
 import _ from "tddev/utils";
 import { Message } from "@/global/const";
 import { apiOrderReceiptDetail } from "@/api/warehouse";
+import { normalizeOrderDetail } from "../aux_modules/orderDetail";
 
 const Router = useRouter();
 const Route = useRoute();
@@ -99,7 +100,7 @@ const onTableRequest = async () => {
     order_id: pageModel.id,
   });
   if (success) {
-    pageModel.data = data;
+    pageModel.data = normalizeOrderDetail(data);
   } else {
     Message.warning(message);
   }

@@ -12,7 +12,7 @@
       <div v-for="item in visibleMonitors" :key="item.id" class="video-card" @click="fullscreen = item">
         <div class="fake-video">
           <div class="scan-line"></div>
-          <div class="canteen-name">第一中学食堂</div>
+          <div class="canteen-name">{{ currentOrgName }}</div>
           <div class="camera-name">{{ item.name }}</div>
           <div class="live-dot">LIVE</div>
         </div>
@@ -35,6 +35,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import Storage from "tddev/storage";
 
 type Monitor = {
   id: string;
@@ -47,6 +48,9 @@ const layoutOptions = ["4宫格", "6宫格", "9宫格"];
 const layout = ref("4宫格");
 const location = ref("全部区域");
 const fullscreen = ref<Monitor | null>(null);
+const orgs: Obj[] = Storage.get("Orgs") ?? [];
+const currentOrgName =
+  orgs.find(item => item.org_id === Storage.get("orgID"))?.org_name || (Storage.get("SystemUserinfo") ?? {})?.org_name || "食堂";
 
 const monitors: Monitor[] = [
   { id: "m1", name: "粗加工间-01", location: "粗加工间", online: true },

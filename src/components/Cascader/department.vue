@@ -22,7 +22,7 @@
       },
       placeholder: {
           type: String,
-          default: '学校'
+          default: '食堂'
       },
       loadFirst: {
           type: Boolean,
@@ -100,7 +100,7 @@
       onChange();
   };
 
-  /** 学校 */
+  /** 组织 */
   const onApiRestaurantListAll = async (areaName: string) => {
       formModel.vLoading = true;
       departmentCheckedList = [];

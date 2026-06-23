@@ -212,7 +212,7 @@ const onTableRequest = async () => {
       if (item.action_id) {
         const actionType = item.action_id.toString();
         const actionTypeData = OutTypeObject[actionType];
-        item._actionType = actionTypeData.name;
+        item._actionType = actionTypeData?.name || item.action_name || "出库";
       }
       return item;
     });

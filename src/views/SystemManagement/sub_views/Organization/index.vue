@@ -23,8 +23,18 @@
         </div>
       </div>
       <div class="table-container">
-        <ElTable height="100%" row-key="id" scrollbar-always-on :data="tableModel.data" default-expand-all>
+        <ElTable height="100%" row-key="id" scrollbar-always-on :data="tableModel.data">
           <ElTableColumn label="组织名称" prop="name" min-width="80" align="left" show-overflow-tooltip></ElTableColumn>
+          <ElTableColumn label="组织类型" prop="unit_attr_name" min-width="90" align="center" show-overflow-tooltip>
+            <template #default="scope">
+              {{ getOrgTypeName(scope.row) }}
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="所属上级" prop="parent_name" min-width="140" align="center" show-overflow-tooltip>
+            <template #default="scope">
+              {{ scope.row.parent_name || findParentName(scope.row.parent_id || scope.row.pid) || "--" }}
+            </template>
+          </ElTableColumn>
 
           <ElTableColumn label="组织图标" prop="icon_url" min-width="80" align="center" show-overflow-tooltip>
             <template #default="scope">
@@ -40,6 +50,8 @@
           ></ElTableColumn>
           <ElTableColumn label="组织地址" prop="address" min-width="80" align="center" show-overflow-tooltip>
           </ElTableColumn>
+          <ElTableColumn label="负责人" prop="contact_name" min-width="100" align="center" show-overflow-tooltip></ElTableColumn>
+          <ElTableColumn label="联系电话" prop="contact_phone" min-width="120" align="center" show-overflow-tooltip></ElTableColumn>
           <ElTableColumn
             label="经营许可证编号"
             prop="business_license_no"
@@ -133,6 +145,7 @@ const tableModel = reactive<Obj>({
   total: 0,
   data: [],
   selection: [],
+  treeData: [],
 });
 /** 请求 */
 const onTableRequest = async () => {
@@ -158,6 +171,7 @@ const onTablePage = (object: { page: number; size: number }) => {
 const onTreeChildrenAdd = (data: Obj) => {
   OrganizationAuxStore.logType = 0;
   OrganizationAuxStore.pid = data.id;
+  OrganizationAuxStore.checked = data;
   showLog.value = true;
 };
 /** 查询 */
@@ -168,11 +182,9 @@ const onTableSearch = () => {
 /** 重置 */
 const onTableReset = () => {
   tableModel.query.name = "";
-  tableModel.query.parent_id = "";
   tableModel.query.unit_attr = ORG_UNIT_ATTR[2].value;
   tableModel.query.page = 1;
   treeRef.value?.clearCurrent();
-  onTableRequest();
 };
 /** 新增 */
 const onTableAdd = () => {
@@ -183,6 +195,7 @@ const onTableAdd = () => {
   OrganizationAuxStore.logType = 0;
   showLog.value = true;
   OrganizationAuxStore.pid = tableModel.query.parent_id;
+  OrganizationAuxStore.checked = treeRef.value?.getCurrent?.() || OrganizationAuxStore.checked;
 };
 /** 编辑 */
 const onTableUpdate = (data: Obj) => {
@@ -230,18 +243,29 @@ const onTreeNodeClick = (data: Obj) => {
   onTableRequest();
 };
 
+const flattenTree = (tree: Obj[]): Obj[] =>
+  tree.flatMap(item => [item, ...flattenTree(Array.isArray(item.children) ? item.children : [])]);
+const findParentName = (parentId: string) => {
+  if (!parentId) return "--";
+  return flattenTree(tableModel.treeData || []).find(item => item.id === parentId || item.org_id === parentId)?.name || "--";
+};
+const getOrgTypeName = (data: Obj) => {
+  const type = ORG_UNIT_ATTR.find(item => item.value === data.unit_attr);
+  return data.unit_attr_name || type?.label || data.org_type_name || "--";
+};
+
 // 获取行政区划树
 const onDistrictTree = async () => {
   const { success, data, message } = await apiAdminDistrictTree();
   if (success) {
     OrganizationAuxStore.districtTree = _.getArray(data.list, []);
+    tableModel.treeData = _.getArray(data.list, []);
   } else {
     ElMessage.error(message || "获取行政区划树失败");
   }
 };
 
 onMounted(() => {
-  onTableRequest();
   onDistrictTree();
 });
 </script>

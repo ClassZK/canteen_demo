@@ -3,21 +3,15 @@
         <div class="query-container">
             <div class="query-left">
                 <ElForm ref="formRef" :model="tableModel.query">
-                    <ElFormItem v-if="showOrgFilter" label="学校" prop="org_id">
+                    <ElFormItem v-if="showOrgFilter" label="组织" prop="org_id">
                         <ICascaderDepartment
                             v-model="tableModel.query.org_id"
                             filterable
                             clearable
                             noCache
-                            placeholder="学校"
+                            placeholder="组织"
                             @change="onDepartmentChange"
                         ></ICascaderDepartment>
-                    </ElFormItem>
-                    <ElFormItem v-if="!isCanteenGroup" label="账号类型" prop="user_type">
-                        <ElSelect v-model="tableModel.query.user_type" clearable placeholder="账号类型">
-                            <ElOption label="平台管理员" :value="20"></ElOption>
-                            <ElOption label="食堂负责人" :value="1"></ElOption>
-                        </ElSelect>
                     </ElFormItem>
                     <ElFormItem label="姓名" prop="nick">
                         <ElInput v-model="tableModel.query.nick" maxlength="10" show-word-limit clearable
@@ -27,7 +21,7 @@
                         <ElInput v-model="tableModel.query.phone" maxlength="11" show-word-limit clearable
                             placeholder="联系电话"></ElInput>
                     </ElFormItem>
-                    <ElFormItem v-if="isCanteenGroup" label="角色" prop="role_id">
+                    <ElFormItem label="角色" prop="role_id">
                         <ElSelect v-model="tableModel.query.role_id" filterable clearable placeholder="角色">
                             <ElOption v-for="item of commonModel.roleList" :key="item.role_id" :label="item.role_name"
                                 :value="item.role_id"></ElOption>
@@ -60,9 +54,9 @@
                     show-overflow-tooltip></ElTableColumn>
                 <ElTableColumn label="联系电话" prop="phone" min-width="150" align="center"
                     show-overflow-tooltip></ElTableColumn>
-                <ElTableColumn :label="isCanteenGroup ? '角色' : '账号类型'" prop="role_name" min-width="150" align="center"
+                <ElTableColumn label="角色" prop="role_name" min-width="150" align="center"
                     show-overflow-tooltip></ElTableColumn>
-                <ElTableColumn v-if="showOrgFilter || !isCanteenGroup" label="组织名称" prop="org_name" min-width="150" align="center"
+                <ElTableColumn label="组织名称" prop="org_name" min-width="150" align="center"
                     show-overflow-tooltip></ElTableColumn>
                 <ElTableColumn fixed="right" label="操作" width="190" align="center">
                     <template #default="scope">
@@ -96,10 +90,9 @@ const UserAuxStore = useUserAuxStore();
 const route = useRoute();
 const formRef = ref();
 const roleGroup = String(route.meta.roleGroup || 'canteen');
-const isCanteenGroup = computed(() => roleGroup === 'canteen');
 const systemUserinfo: Obj = Storage.get('SystemUserinfo') ?? {};
 const isPlatformUser = computed(() => systemUserinfo?.user_scope === 'platform');
-const showOrgFilter = computed(() => !isCanteenGroup.value || isPlatformUser.value);
+const showOrgFilter = computed(() => isPlatformUser.value);
 UserAuxStore.$patch((state) => {
     state.roleGroup = roleGroup;
 });
@@ -107,7 +100,7 @@ UserAuxStore.$patch((state) => {
 const commonModel = reactive({
     roleList: [] as any
 });
-const pageTitle = computed(() => isCanteenGroup.value ? '人员' : '管理员');
+const pageTitle = computed(() => '人员');
 
 /** 交互反馈数据 */
 const tableModel = reactive({
@@ -121,7 +114,6 @@ const tableModel = reactive({
         role_id: '',
         org_id: '',
         role_group: roleGroup,
-        user_type: ''
     },
     total: 0,
     data: [],
@@ -131,9 +123,6 @@ const tableModel = reactive({
 const onTableRequest = async () => {
     tableModel.vLoading = true;
     const query = JSON.parse(JSON.stringify(tableModel.query));
-    if (query.user_type === '') {
-        delete query.user_type;
-    }
     const { success, data, message } = await apiSystemUserList(query);
     if (success) {
         tableModel.data = data.list;
@@ -147,13 +136,6 @@ onTableRequest();
 
 /** 角色 */
 const getApiRoleList = async () => {
-    if (!isCanteenGroup.value) {
-        commonModel.roleList = [];
-        UserAuxStore.$patch((state) => {
-            state.roleList = [];
-        });
-        return;
-    }
     const { success, data } = await apiRoleDict({
         page: 1,
         size: 99,
@@ -184,7 +166,6 @@ const onTableSearch = () => {
 const onTableReset = () => {
     formRef.value?.resetFields();
     tableModel.query.org_id = '';
-    tableModel.query.user_type = '';
     onTableSearch();
 };
 /** 新增 */

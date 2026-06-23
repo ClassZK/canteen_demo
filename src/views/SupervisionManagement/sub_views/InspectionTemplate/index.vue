@@ -19,13 +19,7 @@
           </ElCol>
           <ElCol :xs="24" :sm="12" :lg="8" :xl="6">
             <ElFormItem label="模板名称" required>
-              <ElInput
-                v-model.trim="templateModel.data.name"
-                maxlength="50"
-                show-word-limit
-                clearable
-                placeholder="请输入模板名称"
-              ></ElInput>
+              <ElInput v-model.trim="templateModel.data.name" maxlength="50" show-word-limit clearable placeholder="请输入模板名称"></ElInput>
             </ElFormItem>
           </ElCol>
           <ElCol :span="24">
@@ -48,7 +42,7 @@
     <div class="table-container">
       <div class="table-toolbar">
         <div class="exev-title">{{ currentLabels.detailTitle }}</div>
-        <ElButton type="primary" @click="onAddRow">新增内容</ElButton>
+        <ElButton type="primary" @click="onAddRow">新增{{ currentLabels.detailTitle }}</ElButton>
       </div>
       <ElTable border scrollbar-always-on :data="templateModel.data.list">
         <ElTableColumn label="排序" width="80" align="center">
@@ -57,12 +51,7 @@
         <ElTableColumn :label="currentLabels.itemLabel" prop="item" width="220" align="center">
           <template #default="scope">
             <ElSelect v-model="scope.row.item" filterable placeholder="请选择">
-              <ElOption
-                v-for="item of templateModel.categories"
-                :key="item.value"
-                :label="item.name"
-                :value="item.value"
-              ></ElOption>
+              <ElOption v-for="item of templateModel.categories" :key="item.value" :label="item.name" :value="item.value"></ElOption>
             </ElSelect>
           </template>
         </ElTableColumn>
@@ -82,9 +71,7 @@
         <ElTableColumn fixed="right" label="操作" width="180" align="center">
           <template #default="scope">
             <div class="handle">
-              <ElButton type="primary" link :disabled="scope.$index === 0" @click="onMoveRow(scope.$index, -1)">
-                上移
-              </ElButton>
+              <ElButton type="primary" link :disabled="scope.$index === 0" @click="onMoveRow(scope.$index, -1)">上移</ElButton>
               <ElButton
                 type="primary"
                 link
@@ -104,11 +91,7 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, reactive } from "vue";
-import {
-  apiInspectionTemplateCategories,
-  apiInspectionTemplateDetail,
-  apiInspectionTemplateSave,
-} from "@/api/supervision";
+import { apiInspectionTemplateCategories, apiInspectionTemplateDetail, apiInspectionTemplateSave } from "@/api/supervision";
 import { Message } from "@/global/const";
 import _utils from "@/utils";
 
@@ -156,9 +139,9 @@ const onGetTemplate = async () => {
   const { success, data, message } = await apiInspectionTemplateDetail({ type: templateModel.activeType });
   if (success) {
     templateModel.data = {
-      type: data.type,
-      name: data.name,
-      remark: data.remark,
+      type: data.type || templateModel.activeType,
+      name: data.name || "",
+      remark: data.remark || "",
       list: _utils.getDefaultArray(data.list).map((item: Obj, index: number) => ({
         ...item,
         sort: item.sort || index + 1,
@@ -191,9 +174,7 @@ const onDeleteRow = (index: number) => {
 
 const onMoveRow = (index: number, offset: number) => {
   const target = index + offset;
-  if (target < 0 || target >= templateModel.data.list.length) {
-    return;
-  }
+  if (target < 0 || target >= templateModel.data.list.length) return;
   const current = templateModel.data.list[index];
   templateModel.data.list[index] = templateModel.data.list[target];
   templateModel.data.list[target] = current;
@@ -206,7 +187,7 @@ const validateBeforeSave = () => {
     return false;
   }
   if (!templateModel.data.list.length) {
-    Message.warning("请至少添加一条模板内容");
+    Message.warning(`请至少新增一条${currentLabels.value.detailTitle}`);
     return false;
   }
   for (let i = 0; i < templateModel.data.list.length; i++) {
@@ -224,9 +205,7 @@ const validateBeforeSave = () => {
 };
 
 const onSave = async () => {
-  if (!validateBeforeSave()) {
-    return;
-  }
+  if (!validateBeforeSave()) return;
   templateModel.saving = true;
   normalizeRows();
   const { success, message } = await apiInspectionTemplateSave({

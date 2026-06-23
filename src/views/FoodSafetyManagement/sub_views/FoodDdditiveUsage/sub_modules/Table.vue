@@ -30,12 +30,14 @@
       <ElTable height="100%" scrollbar-always-on :data="tableModel.data">
         
         <IPlatformOrgColumn></IPlatformOrgColumn><ElTableColumn
-          label="食材名称"
-          prop="producet_name"
+          label="菜品名称"
+          prop="dish_name"
           min-width="150"
           align="center"
           show-overflow-tooltip
-        ></ElTableColumn>
+        >
+          <template #default="scope">{{ scope.row.dish_name || scope.row.producet_name }}</template>
+        </ElTableColumn>
         <ElTableColumn
           label="食材总量(kg)"
           prop="total_quantity"
@@ -49,7 +51,9 @@
           min-width="150"
           align="center"
           show-overflow-tooltip
-        ></ElTableColumn>
+        >
+          <template #default="scope">{{ scope.row.additive_name || scope.row.additiveName }}</template>
+        </ElTableColumn>
         <ElTableColumn
           label="添加剂使用量(g)"
           prop="useage"
@@ -63,7 +67,9 @@
           min-width="150"
           align="center"
           show-overflow-tooltip
-        ></ElTableColumn>
+        >
+          <template #default="scope">{{ scope.row.recorder || scope.row.operator || scope.row.user_name }}</template>
+        </ElTableColumn>
         <ElTableColumn
           label="使用时间"
           prop="use_date"

@@ -14,6 +14,7 @@ export const setupDirective = (app: any) => {
   app.directive("permission", {
     /** 权限数组 */
     mounted(el: any, binding: any) {
+      return;
       const systemUserinfo: Obj = Storage.get("SystemUserinfo") ?? {};
       let roles: string[] = [];
       if (_.isNotEmptyString(systemUserinfo.rule)) {

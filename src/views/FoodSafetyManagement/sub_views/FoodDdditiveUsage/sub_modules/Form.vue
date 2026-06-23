@@ -23,13 +23,13 @@
       >
         <ElRow :gutter="30">
           <ElCol :span="12">
-            <ElFormItem label="食材名称" prop="producet_name">
+            <ElFormItem label="菜品名称" prop="dish_name">
               <ElInput
-                v-model="formModel.data.producet_name"
+                v-model="formModel.data.dish_name"
                 maxlength="30"
                 show-word-limit
                 clearable
-                placeholder="请输入食材名称"
+                placeholder="请输入菜品名称"
               ></ElInput>
             </ElFormItem>
           </ElCol>
@@ -147,6 +147,7 @@ const formRef = ref();
 /** 输入数据 函数方式 */
 const formInitial = () => ({
   producet_name: "",
+  dish_name: "",
   total_quantity: undefined,
   additive_category: "",
   additive_name: "",
@@ -165,7 +166,7 @@ const formModel = reactive({
   data: formInitial() as Obj,
   checked: {} as Obj,
   rules: {
-    producet_name: [{ required: true, message: "请输入食材名称", trigger: ["change", "blur"] }],
+    dish_name: [{ required: true, message: "请输入菜品名称", trigger: ["change", "blur"] }],
     total_quantity: [{ required: true, message: "请输入食材总量", trigger: ["change", "blur"] }],
     additive_category: [{ required: true, message: "请选择食品添加剂分类", trigger: ["change", "blur"] }],
     additive_name: [{ required: true, message: "请输入添加剂名称", trigger: ["change", "blur"] }],
@@ -206,6 +207,7 @@ const onFormConfirm = async () => {
       Message.close();
       formModel.loading = true;
       const params = JSON.parse(JSON.stringify(formModel.data));
+      params.producet_name = params.dish_name || params.producet_name;
       params.total_quantity = String(params.total_quantity);
       params.useage = String(params.useage);
       delete params.additive_category;
@@ -252,6 +254,7 @@ watch(
         const data = JSON.parse(JSON.stringify(FoodDdditiveUsageAuxStore.data));
         data.total_quantity = Number(data.total_quantity);
         data.useage = Number(data.useage);
+        data.dish_name = data.dish_name || data.producet_name || "";
         data.additive_category = inferAdditiveCategory(data.additive_name);
         formModel.data = data;
       }

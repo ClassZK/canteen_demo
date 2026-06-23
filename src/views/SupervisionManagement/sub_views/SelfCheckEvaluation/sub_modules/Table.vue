@@ -60,15 +60,11 @@
             {{ onTableCheckStatusFilter(scope.row) }}
           </template>
         </ElTableColumn>
-        <ElTableColumn fixed="right" label="操作" width="100" align="center">
+        <ElTableColumn fixed="right" label="操作" width="140" align="center">
           <template #default="scope">
             <div class="handle">
-              <template v-if="scope.row.status === CheckStatusEnum.uncommitted">
-                <ElButton type="success" link @click="onTableDetail(scope.row)">提交</ElButton>
-              </template>
-              <template v-else>
-                <ElButton type="primary" link @click="onTableDetail(scope.row)">详情</ElButton>
-              </template>
+              <ElButton type="success" link @click="onTableDetail(scope.row)">处理</ElButton>
+              <ElButton type="primary" link @click="onTableDetail(scope.row)">详情</ElButton>
             </div>
           </template>
         </ElTableColumn>
