@@ -1,0 +1,27 @@
+/** 低于标准规范设备 */
+@media (min-width: 320px) and (max-width: 374px) {
+  html {
+    font-size: var(--font-size-xs);
+  }
+}
+
+/** 小型手持设备 */
+@media (min-width: 374px) and (max-width: 389px) {
+  html {
+    font-size: var(--font-size-sm);
+  }
+}
+
+/** 正常手持设备 */
+@media (min-width: 390px) and (max-width: 431px) {
+  html {
+    font-size: var(--font-size-md);
+  }
+}
+
+/** 大型手持设备 */
+@media (min-width: 431px) {
+  html {
+    font-size: var(--font-size-md);
+  }
+}
